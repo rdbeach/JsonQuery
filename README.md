@@ -16,7 +16,7 @@ To run the test file, JsonOTest.java, you will also need to impement the benelog
 
 https://github.com/benelog/multiline
 
-Alternatively, you can edit the JsonOTest.java file so that it does not cantain the multiline strings.
+Alternatively, you can edit the JsonOTest.java file so that it does not contain the multiline strings.
 
 
 ## Usage
@@ -199,7 +199,7 @@ Hello world
 Breif description of the methods. Look at the java code for specifics:
 
                 Static Methods:
-                Json.fromJson: Convers a JSON string to a JsonO object
+                Json.fromJson: Converts a JSON string to a JsonO object
 
                 Generic methods:
                 
@@ -215,7 +215,7 @@ Breif description of the methods. Look at the java code for specifics:
                 
                 add: adds an element or json to the array
                 
-The objects extend HashMap, and the arrays extend Arraylist.
+		Inherited Methods: The objects extend HashMap, and the arrays extend Arraylist.
 
 
 
