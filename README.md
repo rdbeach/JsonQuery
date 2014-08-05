@@ -12,7 +12,7 @@ To use JsonO, you will first need to add the Gson library to your project. You m
 https://code.google.com/p/google-gson/downloads/list
 
 
-To run the test file, JsonOTest.java, you will also need to impement the benelog/multiline project:
+To run the test file, JsonOTest.java, you will also need to implement the benelog/multiline project:
 
 https://github.com/benelog/multiline
 
