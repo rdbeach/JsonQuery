@@ -26,29 +26,29 @@ Here is an example.
 Start with a JSON string:
 
                 {
-    		  "empID": 100,
-    		  "name": "Robert",
-    		  "permanent": false,
-    		  "address": {
-    		    "street": "Foolhill Blvd",
-    		    "city": "Pasadena",
-    		    "zipcode": 91011
-    		  },
-    		  "phoneNumbers": [
-    		    1234567,
-    		    9876543
-    		  ],
-    		  "role": "Java Developer",
-    		  "employed":true,
-    		  "cities": [
-    		    "Los Angeles",
-    		    "New York"
-    		  ],
-    		  "properties": {
-    		    "age": "28 years",
-    		    "salary": "$6000"
-    		  }
-    		}
+    	  "empID": 100,
+    	  "name": "Robert",
+    	  "permanent": false,
+    	  "address": {
+    	    "street": "Foolhill Blvd",
+    	    "city": "Pasadena",
+    	    "zipcode": 91011
+    	  },
+    	  "phoneNumbers": [
+    	    1234567,
+    	    9876543
+    	  ],
+    	  "role": "Java Developer",
+    	  "employed":true,
+    	  "cities": [
+    	    "Los Angeles",
+    	    "New York"
+    	  ],
+    	  "properties": {
+    	    "age": "28 years",
+    	    "salary": "$6000"
+    	  }
+    	}
     		
     		
  String msg will contain the json above. Now, convert the JSON to a JsonO object. Out means System.out.println.
@@ -67,13 +67,14 @@ Output:
 "properties":{"salary":"$6000","age":"28 years"},"employed":true}
 
 
+
 Get some properties:
                     
-                    // Whats my city?
-                    out(json.o("address").s("city"));
-                    
-                    // Whats my phone #
-                    out(json.a("phoneNumbers").i(1));
+                // Whats my city?
+                out(json.o("address").s("city"));
+                
+                // Whats my phone #
+                out(json.a("phoneNumbers").i(1));
 
 
 Output:
@@ -82,21 +83,23 @@ Pasadena
 
 9876543
 
+
+
 Set some properties:
                     
-                    // Change my city
-                    json.o("address").set("city","san fran");
-                    
-                    // Print new address in json format
-                    out(json.o("address").toJson());
-                    
-                    // Update phone numbers
-                    JsonA phoneNumbers = json.a("phoneNumbers");
-                    phoneNumbers.add(0,5555555);
-                    phoneNumbers.remove(1);
-                    
-                    // Print phone numbers in json format
-                    out(phoneNumbers.toJson());
+                // Change my city
+                json.o("address").set("city","san fran");
+                
+                // Print new address in json format
+                out(json.o("address").toJson());
+                
+                // Update phone numbers
+                JsonA phoneNumbers = json.a("phoneNumbers");
+                phoneNumbers.add(0,5555555);
+                phoneNumbers.remove(1);
+                
+                // Print phone numbers in json format
+                out(phoneNumbers.toJson());
                     
 Output:
 
@@ -105,51 +108,53 @@ Output:
 [5555555,9876543]
 
 
+
 Use a JSON string to add to the JsonO object tree:
                     
-                    // Add my hobbies
-                    json.set("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
-                    
-                    // Print the whole thing again
-                    out(json.toJson());
+                // Add my hobbies
+                json.set("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
+                
+                // Print the whole thing again
+                out(json.toJson());
                     
 Output:
 
 {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"hobbies":["tennis","hiking","swimming"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
 
 
+
 Removing stuff, changing stuff, you get the idea now:
                     
-                    // Actually I don't like swimming
-                    json.a("hobbies").remove(2);
-                    out(json.a("hobbies").toJson());
-                    
-                    // Oh no, I lost my job
-                    json.remove("role");
-                    json.set("employed",false);
-                    
-                    // Print the whole thing again
-                    out(json.toJson());
-                    
-                    // Go deeper in the tree
-                    json.o("properties").set("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
-                    
-                    out(json.o("properties").toJson());
-                    
-                    // You can also append to the JSON object like this
-                    
-                    // first remove pets
-                    json.o("properties").remove("pets");
-                    
-                    
-                    // create a pets JSON object
-                    JsonO pets = JsonO.fromJson(myPets);
-                    
-                    // add it
-                    json.o("properties").set("pets",pets);
-                    
-                    // print all
-                    out(json.toJson());
+                // Actually I don't like swimming
+                json.a("hobbies").remove(2);
+                out(json.a("hobbies").toJson());
+                
+                // Oh no, I lost my job
+                json.remove("role");
+                json.set("employed",false);
+                
+                // Print the whole thing again
+                out(json.toJson());
+                
+                // Go deeper in the tree
+                json.o("properties").set("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
+                
+                out(json.o("properties").toJson());
+                
+                // You can also append to the JSON object like this
+                
+                // first remove pets
+                json.o("properties").remove("pets");
+                
+                
+                // create a pets JSON object
+                JsonO pets = JsonO.fromJson(myPets);
+                
+                // add it
+                json.o("properties").set("pets",pets);
+                
+                // print all
+                out(json.toJson());
  
 Output:
 
@@ -160,3 +165,67 @@ Output:
 {"pets":{"cat":"Mr Wiggles","dog":"Happy"},"salary":"$6000","age":"28 years"}
 
 {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"pets":{"cat":"Mr Happy","dog":"Wiggles"},"salary":"$6000","age":"28 years"},"employed":false}
+
+
+
+Another example:
+
+                /**
+ 	{
+ 	                "data": {
+  	                                "translations": [
+   	                                                {
+    	                                                "translatedText": "Hello world"
+                                                	}
+  	                                ]
+                	}
+	}
+                */
+                
+                
+Grap the "translatedText" value like this:
+
+                JsonO json = JsonO.fromJson(msg);
+                out(json.o("data").a{"translations").o(0).s("translatedText"));
+                
+Output:
+
+Hello world
+
+
+
+## Syntax
+
+Breif description of the methods. Look at the java code for specifics:
+
+                Static Methods:
+                Json.fromJson: Convers a JSON string to a JsonO object
+
+                Generic methods:
+                
+                o: gets an object
+                a: gets an array
+                s: gets a string
+                i: gets an integer
+                b: gets a boolean
+                toJson: turns any part of the JsonO object tree into a JSON string 
+                set: sets a value
+                
+                Array Specific Methods:
+                
+                add: adds an element or json to the array
+                
+The objects extend HashMap, and the arrays extend Arraylist.
+
+
+
+## Additional Info
+
+Not sure what happens to other number types besides int. You may want to wrap floats in a string in your json, or just fork the code to suit your needs.
+
+The aim here is convenience and flexibiliy, and to give the Java manipulation a "Javascript like feel". I have not tested the performance.
+
+It is thread safe, though, I am not sure if Gson is entirely thread safe. This is why the JsonO class contains the static member ensureThreadSaftey. If you are running a singe threaded application, you can set this to false and use a statically created Gson, as opposed to creating the object on request.
+
+
+                
