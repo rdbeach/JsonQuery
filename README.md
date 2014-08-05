@@ -50,7 +50,9 @@ Start with a JSON string:
     		  }
     		}
     		
- String msg will contain the json above. Now, convert the JSON to a JsonO object. Out mean System.out.println.
+    		
+ String msg will contain the json above. Now, convert the JSON to a JsonO object. Out means System.out.println.
+ 
  
                 // create JSON object 
                 JsonO json = JsonO.fromJson(msg);
@@ -59,16 +61,22 @@ Start with a JSON string:
                 out(json.toJson());
                 
                 
-                //Prints
-                //{"empID":100,"address":{"zipcode":91011,"city":"Pasadena","street":"Foolhill Blvd"},"role":"Java                     Developer","cities":["Los Angeles","New York"],"permanent":false,
-                "name":"Robert","phoneNumbers":[1234567,9876543],
-                "properties":{"salary":"$6000","age":"28 years"},"employed":true}
+Prints: 
+{"empID":100,"address":{"zipcode":91011,"city":"Pasadena","street":"Foolhill Blvd"},"role":"Java              Developer","cities":["Los Angeles","New York"],"permanent":false,"name":"Robert","phoneNumbers":[1234567,9876543],
+"properties":{"salary":"$6000","age":"28 years"},"employed":true}
+
+
                     
                     // Whats my city?
                     out(json.o("address").s("city"));
                     
                     // Whats my phone #
                     out(json.a("phoneNumbers").i(1));
+
+
+Prints:
+Pasadena
+9876543
                     
                     // Change my city
                     json.o("address").set("city","san fran");
