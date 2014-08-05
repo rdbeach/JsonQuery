@@ -61,11 +61,13 @@ Start with a JSON string:
                 out(json.toJson());
                 
                 
-Prints: 
+Output: 
+
 {"empID":100,"address":{"zipcode":91011,"city":"Pasadena","street":"Foolhill Blvd"},"role":"Java              Developer","cities":["Los Angeles","New York"],"permanent":false,"name":"Robert","phoneNumbers":[1234567,9876543],
 "properties":{"salary":"$6000","age":"28 years"},"employed":true}
 
 
+Get some properties:
                     
                     // Whats my city?
                     out(json.o("address").s("city"));
@@ -74,9 +76,13 @@ Prints:
                     out(json.a("phoneNumbers").i(1));
 
 
-Prints:
+Output:
+
 Pasadena
+
 9876543
+
+Set some properties:
                     
                     // Change my city
                     json.o("address").set("city","san fran");
@@ -92,11 +98,27 @@ Pasadena
                     // Print phone numbers in json format
                     out(phoneNumbers.toJson());
                     
+Output:
+
+{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"}
+
+[5555555,9876543]
+
+
+Use a JSON string to add to the JsonO object tree:
+                    
                     // Add my hobbies
                     json.set("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
                     
                     // Print the whole thing again
                     out(json.toJson());
+                    
+Output:
+
+{"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"hobbies":["tennis","hiking","swimming"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
+
+
+Removing stuff, changing stuff, you get the idea now:
                     
                     // Actually I don't like swimming
                     json.a("hobbies").remove(2);
@@ -129,3 +151,12 @@ Pasadena
                     // print all
                     out(json.toJson());
  
+Output:
+
+["tennis","hiking"]
+
+{"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":false}
+
+{"pets":{"cat":"Mr Wiggles","dog":"Happy"},"salary":"$6000","age":"28 years"}
+
+{"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"pets":{"cat":"Mr Happy","dog":"Wiggles"},"salary":"$6000","age":"28 years"},"employed":false}
