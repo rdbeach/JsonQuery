@@ -51,7 +51,7 @@ Start with a JSON string:
     	}
     		
     		
- String msg will contain the json above. Now, convert the JSON to a JsonO object. Out means System.out.println.
+ String msg will contain the JSON string above. Now, convert the JSON string to a JsonO object. Out means System.out.println.
  
  
                 // create JSON object 
