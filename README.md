@@ -109,10 +109,10 @@ Output:
 
 
 
-#### Use a JSON string to add to the JsonO object tree:
+#### Use a JSON string to add to the JsonO object tree (with jset):
                     
                 // Add my hobbies
-                json.set("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
+                json.jset("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
                 
                 // Print the whole thing again
                 out(json.toJson());
@@ -137,7 +137,7 @@ Output:
                 out(json.toJson());
                 
                 // Go deeper in the tree
-                json.o("properties").set("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
+                json.o("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
                 
                 out(json.o("properties").toJson());
                 
@@ -215,12 +215,14 @@ Brief description of the methods. Look at the java code for specifics.
                 b: gets a boolean
                 toJson: turns any part of the JsonO object tree into a JSON string 
                 set: sets a value
+                jset: set ad value from a JSON string
                 
                 Array Specific Methods:
                 
-                add: adds an element or json to the array
+                add: adds an value
+                jadd: adds a value from a JSON string
                 
-		Inherited Methods: The objects extend HashMap, and the arrays extend Arraylist.
+		Inherited Methods: JsonO extends HashMap, and JsonA extends Arraylist.
 
 
 
@@ -231,6 +233,8 @@ Not sure what happens to other number types besides int. You may want to wrap fl
 The aim here is convenience and flexibiliy, and to give the Java manipulation a "Javascript like feel". I have not tested the performance.
 
 It is thread safe, though, I am not sure if Gson is entirely thread safe. This is why the JsonO class contains the static member ensureThreadSaftey. If you are running a singe threaded application, you can set this to false and use a statically created Gson, as opposed to creating the object on request.
+
+This code traverses the JsonElements tree and builds a corresponding tree of JsonO and JsonA elements (Essentially maps and arrays). You probably could acheive the same functionality just by wrapping the JsonElements tree directly. However, having the data encapsulated in your own data types may offer some advantages. Especially if you want to extend this further. For instance, I see no way in the Gson code to directly set an element of an JsonArray at a certain index, but by reconstruction the arrays with arraylists, this is quite easy.
 
 
                 
