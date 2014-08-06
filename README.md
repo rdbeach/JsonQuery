@@ -21,7 +21,7 @@ Alternatively, you can edit the JsonOTest.java file so that it does not contain 
 
 ## Usage
 
-Here is an example.
+#### Here is an example.
 
 Start with a JSON string:
 
@@ -68,7 +68,7 @@ Output:
 
 
 
-Get some properties:
+#### Get some properties:
                     
                 // Whats my city?
                 out(json.o("address").s("city"));
@@ -85,7 +85,7 @@ Pasadena
 
 
 
-Set some properties:
+#### Set some properties:
                     
                 // Change my city
                 json.o("address").set("city","san fran");
@@ -109,7 +109,7 @@ Output:
 
 
 
-Use a JSON string to add to the JsonO object tree:
+#### Use a JSON string to add to the JsonO object tree:
                     
                 // Add my hobbies
                 json.set("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
@@ -123,7 +123,7 @@ Output:
 
 
 
-Removing stuff, changing stuff, you get the idea now:
+#### Removing stuff, changing stuff, you get the idea now:
                     
                 // Actually I don't like swimming
                 json.a("hobbies").remove(2);
@@ -168,7 +168,7 @@ Output:
 
 
 
-Another example:
+#### Another example:
 
                 /**
  	{
