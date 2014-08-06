@@ -123,7 +123,7 @@ Output:
 
 
 
-#### Removing stuff, changing stuff, you get the idea now:
+#### Removing stuff. Changing stuff. You get the idea now:
                     
                 // Actually I don't like swimming
                 json.a("hobbies").remove(2);
@@ -146,7 +146,12 @@ Output:
                 // first remove pets
                 json.o("properties").remove("pets");
                 
-                
+                /** myPets:
+	   		{
+	   		"cat":"Mr Happy",
+	   		"dog":"Wiggles"
+	   		}
+   		*/
                 // create a pets JSON object
                 JsonO pets = JsonO.fromJson(myPets);
                 
@@ -183,7 +188,7 @@ Output:
                 */
                 
                 
-Grap the "translatedText" value like this:
+Grab the "translatedText" value like this:
 
                 JsonO json = JsonO.fromJson(msg);
                 out(json.o("data").a{"translations").o(0).s("translatedText"));
@@ -196,7 +201,7 @@ Hello world
 
 ## Syntax
 
-Breif description of the methods. Look at the java code for specifics:
+Breif description of the methods. Look at the java code for specifics.
 
                 Static Methods:
                 Json.fromJson: Converts a JSON string to a JsonO object
