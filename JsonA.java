@@ -33,7 +33,7 @@ public class JsonA extends ArrayList<Object>{
 	public boolean b(int key){
 		return ((Boolean)this.get(key)).booleanValue();
 	}
-	public void add(int i,String value){
+	public void jadd(int i,String value){
 	    if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
 		try{
@@ -43,7 +43,7 @@ public class JsonA extends ArrayList<Object>{
 			this.add(i,(Object)value);
 		}
 	}
-	public void json(String value){
+	public void jadd(String value){
 	    if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
 		try{
@@ -54,7 +54,7 @@ public class JsonA extends ArrayList<Object>{
 		}
 	}
 	
-	public void json(int i,String value){
+	public void jset(int i,String value){
 	    if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
 		try{
