@@ -51,7 +51,7 @@ public class JsonO extends HashMap<String,Object>{
 	public boolean b(String key){
 		return ((Boolean)this.get(key)).booleanValue();
 	}
-	public void set(String key, String value){
+	public void setJson(String key, String value){
 	    if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
 		try{
