@@ -234,7 +234,7 @@ The aim here is convenience and flexibiliy, and to give the Java manipulation a 
 
 It is thread safe, though, I am not sure if Gson is entirely thread safe. This is why the JsonO class contains the static member ensureThreadSaftey. If you are running a singe threaded application, you can set this to false and use a statically created Gson, as opposed to creating the object on request.
 
-This code traverses the JsonElements tree and builds a corresponding tree of JsonO and JsonA elements (Essentially maps and arrays). You probably could acheive the same functionality just by wrapping the JsonElements tree directly. However, having the data encapsulated in your own data types may offer some advantages. Especially if you want to extend this further. For instance, I see no way in the Gson code to directly set an element of an JsonArray at a certain index, but by reconstruction the arrays with arraylists, this is quite easy.
+This code traverses the JsonElements tree and builds a corresponding tree of JsonO and JsonA elements (Essentially HashMap and ArrayList classes). Of course, you probably could achieve the same functionality just by wrapping the JsonElements tree directly. However, having the data encapsulated in your own data types may offer some advantages, especially if you want to extend this further. For instance, I see no way in the Gson code to directly set an element of an JsonArray at a certain index, but by reconstructing the arrays with arraylists, this is quite easy.
 
 
                 
