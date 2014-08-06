@@ -43,7 +43,7 @@ public class JsonA extends ArrayList<Object>{
 			this.add(i,(Object)value);
 		}
 	}
-	public void add(String value){
+	public void json(String value){
 	    if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
 		try{
@@ -54,7 +54,7 @@ public class JsonA extends ArrayList<Object>{
 		}
 	}
 	
-	public void set(int i,String value){
+	public void json(int i,String value){
 	    if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
 		try{
