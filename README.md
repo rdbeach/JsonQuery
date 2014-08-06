@@ -222,7 +222,7 @@ Brief description of the methods. Look at the java code for specifics.
                 add: adds an value
                 jadd: adds a value from a JSON string
                 
-		Inherited Methods: JsonO extends HashMap, and JsonA extends Arraylist.
+		Inherited Methods: JsonO extends HashMap, and JsonA extends ArrayList.
 
 
 
