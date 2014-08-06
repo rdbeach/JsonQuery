@@ -201,7 +201,7 @@ Hello world
 
 ## Syntax
 
-Breif description of the methods. Look at the java code for specifics.
+Brief description of the methods. Look at the java code for specifics.
 
                 Static Methods:
                 Json.fromJson: Converts a JSON string to a JsonO object
