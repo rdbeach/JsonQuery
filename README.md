@@ -228,6 +228,8 @@ Brief description of the methods. Look at the java code for specifics.
 
 ## Additional Info
 
+The JSON string must start with braces {}. You cannot start with brackets [].
+
 Not sure what happens to other number types besides int. You may want to wrap floats in a string in your json, or just fork the code to suit your needs.
 
 The aim here is convenience and flexibiliy, and to give the Java manipulation a "Javascript like feel". I have not tested the performance.
