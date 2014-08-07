@@ -156,6 +156,13 @@ public class JsonQuery<T>{
 		return this;
 	}
 	
+	public JsonQuery<T> set(int key, Object value){
+		if(node instanceof JsonQueryArrayList){
+			((JsonQueryArrayList)node).set(key,value);
+		}
+		return this;
+	}
+	
 	public JsonQuery<T> jset(String key, String value){
 		if(node instanceof JsonQueryHashMap){
 			((JsonQueryHashMap)node).jset(key,value,getGson());
@@ -172,14 +179,22 @@ public class JsonQuery<T>{
 	
 	public JsonQuery<T> add(Object value){
 		if(node instanceof JsonQueryArrayList){
-			((JsonQueryArrayList)node).add(new JsonQuery<Object>(value));
+			if(value instanceof JsonQuery){
+				((JsonQueryArrayList)node).add(value);
+			}else{
+				((JsonQueryArrayList)node).add(new JsonQuery<Object>(value));
+			}
 		}
 		return this;
 	}
 	
-	public JsonQuery<T> add(int i,Object value){
+	public JsonQuery<T> add(int key,Object value){
 		if(node instanceof JsonQueryArrayList){
-			((JsonQueryArrayList)node).add(i,new JsonQuery<Object>(value));
+			if(value instanceof JsonQuery){
+				((JsonQueryArrayList)node).add(key,value);
+			}else{
+				((JsonQueryArrayList)node).add(key,new JsonQuery<Object>(value));
+			}
 		}
 		return this;
 	}
