@@ -4,58 +4,58 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
-public class JsonODeserializer implements JsonDeserializer<JsonO> {
+
+@SuppressWarnings("rawtypes")
+public class JsonQueryDeserializer implements JsonDeserializer<JsonQuery> {
 
   @Override
-  public JsonO deserialize(final JsonElement json, final Type typeOfT, final JsonDeserializationContext context)
+  public JsonQuery<JsonQueryHashMap> deserialize(final JsonElement json, final Type typeOfT, final JsonDeserializationContext context)
       throws JsonParseException {
 	  
-	JsonO map = new JsonO();
+	   JsonQueryHashMap map = new JsonQueryHashMap();
 	   final JsonObject jsonObject= json.getAsJsonObject();
 	   final  Set<Map.Entry<String,JsonElement>> elemset = jsonObject.entrySet();
     
 	   for (Map.Entry<String, JsonElement> elem : elemset){
-		    //System.out.println(elem.getKey() + "/" + elem.getValue());
+		   // System.out.println(elem.getKey() + "/" + elem.getValue());
 		    String key = elem.getKey();
 		    JsonElement value = elem.getValue();
 		    map.put(key,get_value(value,typeOfT,context));
 	   }
 
-    return map;
+	   return new JsonQuery<JsonQueryHashMap>(map);
   }
   
   public Object get_value(final JsonElement elem, final Type typeOfT, final JsonDeserializationContext context){
 	  if(elem.isJsonObject()){
-	    	JsonO innermap = deserialize(elem,typeOfT,context);
+	    	JsonQuery<JsonQueryHashMap> innermap = deserialize(elem,typeOfT,context);
 	    	return innermap;
 	  }
 	  else if(elem.isJsonPrimitive()){
 	  		if(elem.getAsJsonPrimitive().isString()){
-		    		String str = elem.getAsJsonPrimitive().getAsString();
-		    		return str;
+	  				return new JsonQuery<String>((String)elem.getAsJsonPrimitive().getAsString());
 	  		}else if(elem.getAsJsonPrimitive().isNumber()){
-		    		int i = elem.getAsJsonPrimitive().getAsInt();
-		    		return i;
+	  			   return new JsonQuery<Number>((Number)elem.getAsJsonPrimitive().getAsNumber());
 	  		}else if(elem.getAsJsonPrimitive().isBoolean()){
-		    		boolean bool = elem.getAsJsonPrimitive().getAsBoolean();
-		    		return bool;
+		    		return new JsonQuery<Boolean>((Boolean)elem.getAsJsonPrimitive().getAsBoolean());
 	  		}
 	  }
 	  else if(elem.isJsonArray()){
-		    Collection collection = new JsonA();
-	    	Iterator members = elem.getAsJsonArray().iterator();
+		    Collection<Object> collection = new JsonQueryArrayList();
+	    	Iterator<?> members = elem.getAsJsonArray().iterator();
 	    	while (members.hasNext()){
 	    		JsonElement member = (JsonElement) members.next();
 				collection.add(get_value(member,typeOfT,context));
 			}
-	    	return collection;
+	    	return new JsonQuery<JsonQueryArrayList>((JsonQueryArrayList)collection);
+	  } else if(elem.isJsonNull()){
+		  return new JsonQuery<Object>(null);
 	  }
 	  return null;
   }
