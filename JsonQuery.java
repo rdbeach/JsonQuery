@@ -64,28 +64,32 @@ public class JsonQuery<T>{
 	
 	public Object get(String key) {
 		if(node instanceof JsonQueryHashMap){
-			return ((JsonQuery<?>)((JsonQueryHashMap)node).get(key)).node;
+			JsonQuery<?> json = (JsonQuery<?>)((JsonQueryHashMap)node).get(key);
+			if(json!=null) return json.node;
 		}
 		return null;
 	}
 	
 	public Object get(int key) {
 		if(node instanceof JsonQueryArrayList){
-			return ((JsonQuery<?>)((JsonQueryArrayList)node).get(key)).node;
+			JsonQuery<?> json = (JsonQuery<?>)((JsonQueryArrayList)node).get(key);
+			if(json!=null) return json.node;
 		}
 		return null;
 	}
 	
 	public String s(String key){
 		if(node instanceof JsonQueryHashMap){
-			return (String)((JsonQuery<?>)((JsonQueryHashMap)node).get(key)).node;
+			JsonQuery<?> json = (JsonQuery<?>)((JsonQueryHashMap)node).get(key);
+			if(json!=null) return (String)json.node;
 		}
 		return null;
 	}
 	
 	public String s(int key){
 		if(node instanceof JsonQueryArrayList){
-			return (String)((JsonQuery<?>)((JsonQueryArrayList)node).get(key)).node;
+			JsonQuery<?> json = (JsonQuery<?>)((JsonQueryArrayList)node).get(key);
+			if(json!=null) return (String)json.node;
 		}
 		return null;
 	}
@@ -93,7 +97,8 @@ public class JsonQuery<T>{
 	@SuppressWarnings("unchecked")
 	public boolean b(String key){
 		if(node instanceof JsonQueryHashMap){
-			return (boolean)((JsonQuery<Object>)((JsonQueryHashMap)node).get(key)).node;
+			JsonQuery<Object> json = (JsonQuery<Object>)((JsonQueryHashMap)node).get(key);
+			if(json!=null) return (boolean)json.node;
 		}
 		return false;
 	}
@@ -101,50 +106,56 @@ public class JsonQuery<T>{
 	@SuppressWarnings("unchecked")
 	public boolean b(int key){
 		if(node instanceof JsonQueryArrayList){
-			return (boolean)((JsonQuery<Object>)((JsonQueryArrayList)node).get(key)).node;
+			JsonQuery<Object> json = (JsonQuery<Object>)((JsonQueryArrayList)node).get(key);
+			if(json!=null) return (boolean)json.node;
 		}
 		return false;
 	}
 	
 	public int i(String key){
 		if(node instanceof JsonQueryHashMap){
-			
-			return ((Number)((JsonQuery<?>)((JsonQueryHashMap)node).get(key)).node).intValue();
+			JsonQuery<?> json = (JsonQuery<?>)((JsonQueryHashMap)node).get(key);
+			if(json!=null) return ((Number)(json.node)).intValue();
 		}
 		return 0;
 	}
 	
 	public int i(int key){
 		if(node instanceof JsonQueryArrayList){
-			return ((Number)((JsonQuery<?>)((JsonQueryArrayList)node).get(key)).node).intValue();
+			JsonQuery<?> json = (JsonQuery<?>)((JsonQueryArrayList)node).get(key);
+			if(json!=null) return ((Number)(json.node)).intValue();
 		}
 		return 0;
 	}
 	
 	public long l(String key){
 		if(node instanceof JsonQueryHashMap){
-			return ((Number)((JsonQuery<?>)((JsonQueryHashMap)node).get(key)).node).longValue();
+			JsonQuery<?> json = (JsonQuery<?>)((JsonQueryHashMap)node).get(key);
+			if(json!=null) return ((Number)(json.node)).longValue();
 		}
 		return 0;
 	}
 	
 	public long l(int key){
 		if(node instanceof JsonQueryArrayList){
-			return ((Number)((JsonQuery<?>)((JsonQueryArrayList)node).get(key)).node).longValue();
+			JsonQuery<?> json = (JsonQuery<?>)((JsonQueryArrayList)node).get(key);
+			if(json!=null) return ((Number)(json.node)).longValue();
 		}
 		return 0;
 	}
 	
 	public double d(String key){
 		if(node instanceof JsonQueryHashMap){
-			return ((Number)((JsonQuery<?>)((JsonQueryHashMap)node).get(key)).node).doubleValue();
+			JsonQuery<?> json = (JsonQuery<?>)((JsonQueryHashMap)node).get(key);
+			if(json!=null) return ((Number)(json.node)).doubleValue();
 		}
 		return 0;
 	}
 	
 	public double d(int key){
 		if(node instanceof JsonQueryArrayList){
-			return ((Number)((JsonQuery<?>)((JsonQueryArrayList)node).get(key)).node).doubleValue();
+			JsonQuery<?> json = (JsonQuery<?>)((JsonQueryArrayList)node).get(key);
+			if(json!=null) return ((Number)(json.node)).doubleValue();
 		}
 		return 0;
 	}
@@ -188,12 +199,12 @@ public class JsonQuery<T>{
 		return this;
 	}
 	
-	public JsonQuery<T> add(int key,Object value){
+	public JsonQuery<T> add(int i,Object value){
 		if(node instanceof JsonQueryArrayList){
 			if(value instanceof JsonQuery){
-				((JsonQueryArrayList)node).add(key,value);
+				((JsonQueryArrayList)node).add(i,value);
 			}else{
-				((JsonQueryArrayList)node).add(key,new JsonQuery<Object>(value));
+				((JsonQueryArrayList)node).add(i,new JsonQuery<Object>(value));
 			}
 		}
 		return this;
