@@ -48,6 +48,8 @@ public class JsonQuery<T>{
 		this.node = node;
 	}
 	
+	// Single node tree traversal operator
+	
 	public JsonQuery<?> _(String key){
 		if(node instanceof JsonQueryHashMap){
 			return (JsonQuery<?>)((JsonQueryHashMap)node).get(key);
@@ -61,6 +63,69 @@ public class JsonQuery<T>{
 		}
 		return null;
 	}
+	
+	// Javascript query tree traversal operator
+	
+	@SuppressWarnings("unchecked")
+	public JsonQuery<?> $(String key) {
+		String[] keys = key.replace("[",".").replace("]","").split("[.]");
+		JsonQuery<T> json = this;
+		int i=0;
+		for(i=0;i<keys.length;i++){
+			if(JsonQueryUtil.isInteger(keys[i])){
+				json = (JsonQuery<T>) json._(Integer.parseInt(keys[i]));
+			}else{
+				json = (JsonQuery<T>) json._(keys[i]);
+			}
+		}
+		return json;
+	}
+	
+	// Gets for the javascript queries
+	
+	public Object get() {
+		if(node!=null){
+			return node;
+		}
+		return null;
+	}
+	
+	public String s() {
+		if(node!=null){
+			return (String) node;
+		}
+		return null;
+	}
+	
+	public boolean b() {
+		if(node!=null){
+			return (Boolean) node;
+		}
+		return false;
+	}
+	
+	public int i() {
+		if(node!=null){
+			return ((Number)node).intValue();
+		}
+		return 0;
+	}
+	
+	public long l() {
+		if(node!=null){
+			return ((Number)node).longValue();
+		}
+		return 0;
+	}
+	
+	public double d() {
+		if(node!=null){
+			return ((Number)node).doubleValue();
+		}
+		return 0;
+	}
+	
+	// Gets for the single node traversal queries
 	
 	public Object get(String key) {
 		if(node instanceof JsonQueryHashMap){
@@ -76,25 +141,6 @@ public class JsonQuery<T>{
 			if(json!=null) return json.node;
 		}
 		return null;
-	}
-	
-	@SuppressWarnings("unchecked")
-	public Object _get(String key) {
-		String[] keys = key.replace("[",".").replace("]","").split("[.]");
-		JsonQuery<T> json = this;
-		int i=0;
-		for(i=0;i<keys.length-1;i++){
-			if(JsonQueryUtil.isInteger(keys[i])){
-				json = (JsonQuery<T>) json._(Integer.parseInt(keys[i]));
-			}else{
-				json = (JsonQuery<T>) json._(keys[i]);
-			}
-		}
-		if(JsonQueryUtil.isInteger(keys[i])){
-			return json.get(Integer.parseInt(keys[i]));
-		}else{
-			return json.get(keys[i]);
-		}
 	}
 	
 	public String s(String key){
@@ -179,6 +225,29 @@ public class JsonQuery<T>{
 		return 0;
 	}
 	
+	// Sets for the javascript queries
+	
+	@SuppressWarnings("unchecked")
+	public JsonQuery<T> set(Object value){
+		if(value instanceof JsonQuery){
+			node = (T) ((JsonQuery<?>)value).node;
+		}else{
+			node = (T) value;
+		}
+		return this;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public JsonQuery<T> jset(String value){
+		if(value=="")value="\"\"";
+		String json = "{\"obj\":"+value+"}";
+		JsonQuery<?> j = gson.fromJson(json,JsonQuery.class);
+		node = (T) j._("obj").node;
+		return this;
+	}
+	
+	// Sets for the single node traversal
+	
 	public JsonQuery<T> set(String key, Object value){
 		if(node instanceof JsonQueryHashMap){
 			((JsonQueryHashMap)node).set(key,value);
@@ -206,6 +275,12 @@ public class JsonQuery<T>{
 		}
 		return this;
 	}
+	
+	
+	
+	// adds for javascript query and single node traversal
+	
+	
 	
 	public JsonQuery<T> add(Object value){
 		if(node instanceof JsonQueryArrayList){
