@@ -241,7 +241,7 @@ public class JsonQuery<T>{
 	public JsonQuery<T> jset(String value){
 		if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
-		JsonQuery<?> j = gson.fromJson(json,JsonQuery.class);
+		JsonQuery<?> j = getGson.fromJson(json,JsonQuery.class);
 		node = (T) j._("obj").node;
 		return this;
 	}
