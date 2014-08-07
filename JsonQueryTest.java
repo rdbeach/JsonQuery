@@ -70,8 +70,13 @@ public class JsonOTest {
             // or recreate JSON string from JSON object using class method
             out(json.toJson());
             
-            // Whats my city?
+            // Whats my city? (s gets a string)
             out(json._("address").s("city"));
+            
+             //You can also use get, but this returns object so you must cast to the type you want
+             String city = (String) json._("address").get("city");
+                
+             out(city);
             
             // Whats my phone #
             out(json._("phoneNumbers").i(1));
