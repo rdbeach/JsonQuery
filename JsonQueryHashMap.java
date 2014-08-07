@@ -18,6 +18,10 @@ public class JsonQueryHashMap extends HashMap<String,Object>{
 	}
 	
 	public void set(String key, Object value){
-		this.put(key,new JsonQuery<Object>(value));
+		if(value instanceof JsonQuery){
+			this.put(key,value);
+		}else{
+			this.put(key,new JsonQuery<Object>(value));
+		}
 	}
 }
