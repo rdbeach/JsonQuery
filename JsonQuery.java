@@ -116,7 +116,6 @@ public class JsonQuery<T>{
 	
 	public int i(int key){
 		if(node instanceof JsonQueryArrayList){
-			System.out.println(((JsonQuery<?>)((JsonQueryArrayList)node).get(key)).node instanceof JsonQuery);
 			return ((Number)((JsonQuery<?>)((JsonQueryArrayList)node).get(key)).node).intValue();
 		}
 		return 0;
