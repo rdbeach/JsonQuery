@@ -1,7 +1,7 @@
 JsonQuery
 =====
 
-A Gson extension that makes the conversion between JSON and Java easier.
+A Gson extension that makes manipulating JSON in Java easier.
 
 
 ## Implementaion Notes
