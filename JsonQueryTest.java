@@ -78,7 +78,7 @@ public class JsonOTest {
                 
              out(city);
             
-            // Whats my phone #
+            // Whats my phone # (i gets an integer)
             out(json._("phoneNumbers").i(1));
             
             // Change my city
