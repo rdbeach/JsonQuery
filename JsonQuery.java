@@ -79,7 +79,7 @@ public class JsonQuery<T>{
 	}
 	
 	@SuppressWarnings("unchecked")
-	public Object jget(String key) {
+	public Object _get(String key) {
 		String[] keys = key.replace("[",".").replace("]","").split("[.]");
 		JsonQuery<T> json = this;
 		int i=0;
