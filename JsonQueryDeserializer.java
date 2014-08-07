@@ -14,11 +14,10 @@ import com.google.gson.JsonParseException;
 @SuppressWarnings("rawtypes")
 public class JsonQueryDeserializer implements JsonDeserializer<JsonQuery> {
 
-  @Override
-  public JsonQuery<JsonQueryHashMap> deserialize(final JsonElement json, final Type typeOfT, final JsonDeserializationContext context)
+  public JsonQuery<JsonQueryObject> deserialize(final JsonElement json, final Type typeOfT, final JsonDeserializationContext context)
       throws JsonParseException {
 	  
-	   JsonQueryHashMap map = new JsonQueryHashMap();
+	   JsonQueryObject map = new JsonQueryObject();
 	   final JsonObject jsonObject= json.getAsJsonObject();
 	   final  Set<Map.Entry<String,JsonElement>> elemset = jsonObject.entrySet();
     
@@ -29,31 +28,31 @@ public class JsonQueryDeserializer implements JsonDeserializer<JsonQuery> {
 		    map.put(key,get_value(value,typeOfT,context));
 	   }
 
-	   return new JsonQuery<JsonQueryHashMap>(map);
+	   return new JsonQuery<JsonQueryObject>(map);
   }
   
-  public Object get_value(final JsonElement elem, final Type typeOfT, final JsonDeserializationContext context){
+  public JsonQuery get_value(final JsonElement elem, final Type typeOfT, final JsonDeserializationContext context){
 	  if(elem.isJsonObject()){
-	    	JsonQuery<JsonQueryHashMap> innermap = deserialize(elem,typeOfT,context);
+	    	JsonQuery<JsonQueryObject> innermap = deserialize(elem,typeOfT,context);
 	    	return innermap;
 	  }
 	  else if(elem.isJsonPrimitive()){
 	  		if(elem.getAsJsonPrimitive().isString()){
 	  				return new JsonQuery<String>((String)elem.getAsJsonPrimitive().getAsString());
 	  		}else if(elem.getAsJsonPrimitive().isNumber()){
-	  			   return new JsonQuery<Number>((Number)elem.getAsJsonPrimitive().getAsNumber());
+	  			   return new JsonQuery<JsonQueryNumber>(new JsonQueryNumber(elem.getAsJsonPrimitive().getAsNumber()));
 	  		}else if(elem.getAsJsonPrimitive().isBoolean()){
 		    		return new JsonQuery<Boolean>((Boolean)elem.getAsJsonPrimitive().getAsBoolean());
 	  		}
 	  }
 	  else if(elem.isJsonArray()){
-		    Collection<Object> collection = new JsonQueryArrayList();
+		    Collection<JsonQuery> collection = new JsonQueryArray();
 	    	Iterator<?> members = elem.getAsJsonArray().iterator();
 	    	while (members.hasNext()){
 	    		JsonElement member = (JsonElement) members.next();
 				collection.add(get_value(member,typeOfT,context));
 			}
-	    	return new JsonQuery<JsonQueryArrayList>((JsonQueryArrayList)collection);
+	    	return new JsonQuery<JsonQueryArray>((JsonQueryArray)collection);
 	  } else if(elem.isJsonNull()){
 		  return new JsonQuery<Object>(null);
 	  }
