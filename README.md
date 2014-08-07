@@ -78,7 +78,7 @@ Output:
                 
                 out(city);
                 
-                // Whats my phone #
+                // Whats my phone # (i gets an integer)
                 out(json._("phoneNumbers").i(1));
 
 
