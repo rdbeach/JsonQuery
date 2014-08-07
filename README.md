@@ -21,7 +21,12 @@ Alternatively, you can edit the JsonQueryTest.java file so that it does not cont
 
 ## Usage
 
-#### Here is an example.
+Are two ways to manipulate the json tree in java.
+
+	Single node traversal
+	Javascript queries.
+
+#### We will begin with single node traversal. Here is an example.
 
 Start with a JSON string:
 
@@ -198,8 +203,6 @@ Grab the "translatedText" value like this:
                 JsonQuery json = JsonQuery.fromJson(msg);
                 out(json._("data")._("translations")._(0).s("translatedText"));
                 
-                // Or using _get (That's underscore get)
-                out(json._get("data.translations[0].translatedText"));
                 
 Output:
 
@@ -207,7 +210,8 @@ Hello world
 
 
 
-#### Chaining is fun:
+
+#### Chaining, chaining, chaining.:
 
 	json.set("name", "bob")
                 .jset("test_scores","[]")._("test_scores")
@@ -230,6 +234,30 @@ rover
 
 
 
+
+####Javascript queries (The fun part)
+                
+                // Here are some examples of javascript queries (using the $ method)
+                
+                // This one does the same thing as the single node query above.
+                out(json.$("data.translations[0].translatedText").get());
+                
+                // Or you can set a value like this
+                 out(json.$("data.translations[0].translatedText").set("Bonjour"));
+                 
+                // All the same stuff
+                
+                json.$("data.translations").add(0,"Bonjour");
+                
+                out(json.$("data.translations").jadd(0,"{\"french\":\"Bonjour\",\"english\":\"hello\"}"));
+                
+Output:
+
+Hello world
+
+
+
+
 ## Syntax
 
 Brief description of the methods. Look at the java code for specifics.
@@ -240,8 +268,9 @@ Brief description of the methods. Look at the java code for specifics.
                 Generic methods:
                 
                 _: gets a branch in the JsonQuery Object tree
+                $: traverses the JsonQuery Object tree using javascript queries. (I am making this nomenclature up as I go.)
+                
                 get: gets a leaf (returns object)
-                _get: retrieve a leaf value from a string containing javascript notation
                 s: gets a string leaf
                 i: gets an integer leaf
                 d: gets a double leaf
@@ -265,7 +294,7 @@ Brief description of the methods. Look at the java code for specifics.
 
 The JSON string must start with braces {}.
 
-TODO: Still need to make more type specific versions of _get. Also want to make a _set. Thinking about adding search functions.
+TODO: Thinking about adding search functions, bulk add functions, and more advanced query traversal methods. Any ideas? Suggestions?
 
 The aim here is convenience and flexibiliy, and to give the Java manipulation a "Javascript like feel". I have not tested the performance.
 
