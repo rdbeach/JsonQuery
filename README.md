@@ -207,13 +207,13 @@ Hello world
 
 
 
-## Chaining is fun:
+#### Chaining is fun:
 
-	json2.set("name", "bob")
+	json.set("name", "bob")
                 .jset("test_scores","[]")._("test_scores")
                 .add(57).add(92).add(76);
             
-        json2.jset("family", "{}")._("family")
+        json.jset("family", "{}")._("family")
             	.set("mother","Donna")
             	.set("father","Bill")
             	.set("sister", "Moonbeam")
@@ -222,7 +222,11 @@ Hello world
             		.add("killer")
             		.add(1,"fluffy");
             
-        out(json2.jget("family.pets[0]"));
+        out(json.jget("family.pets[0]"));
+        
+Output:
+
+rover
 
 
 
