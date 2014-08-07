@@ -198,9 +198,31 @@ Grab the "translatedText" value like this:
                 JsonQuery json = JsonQuery.fromJson(msg);
                 out(json._("data")._("translations")._(0).s("translatedText"));
                 
+                // Or using jget...
+                out(json.jget("data.translations[0].translatedText"));
+                
 Output:
 
 Hello world
+
+
+
+## Chaining is fun:
+
+	json2.set("name", "bob")
+                .jset("test_scores","[]")._("test_scores")
+                .add(57).add(92).add(76);
+            
+        json2.jset("family", "{}")._("family")
+            	.set("mother","Donna")
+            	.set("father","Bill")
+            	.set("sister", "Moonbeam")
+            	.jset("pets","[]")._("pets")
+            		.add("rover")
+            		.add("killer")
+            		.add(1,"fluffy");
+            
+        out(json2.jget("family.pets[0]"));
 
 
 
@@ -223,6 +245,7 @@ Brief description of the methods. Look at the java code for specifics.
                 toJson: turns any part of the JsonQuery object tree into a JSON string 
                 set: sets a value
                 jset: set a value from a JSON string
+                jget: retrieve a value from a string containing javascript notation
                 
                 Array Specific Methods:
                 
@@ -236,6 +259,8 @@ Brief description of the methods. Look at the java code for specifics.
 ## Additional Info
 
 The JSON string must start with braces {}.
+
+TODO: Still need to make more type specific versions of jget. Also thinking about adding search functions.
 
 The aim here is convenience and flexibiliy, and to give the Java manipulation a "Javascript like feel". I have not tested the performance.
 
