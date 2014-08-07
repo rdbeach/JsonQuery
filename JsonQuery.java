@@ -78,6 +78,25 @@ public class JsonQuery<T>{
 		return null;
 	}
 	
+	@SuppressWarnings("unchecked")
+	public Object jget(String key) {
+		String[] keys = key.replace("[",".").replace("]","").split("[.]");
+		JsonQuery<T> json = this;
+		int i=0;
+		for(i=0;i<keys.length-1;i++){
+			if(JsonQueryUtil.isInteger(keys[i])){
+				json = (JsonQuery<T>) json._(Integer.parseInt(keys[i]));
+			}else{
+				json = (JsonQuery<T>) json._(keys[i]);
+			}
+		}
+		if(JsonQueryUtil.isInteger(keys[i])){
+			return json.get(Integer.parseInt(keys[i]));
+		}else{
+			return json.get(keys[i]);
+		}
+	}
+	
 	public String s(String key){
 		if(node instanceof JsonQueryHashMap){
 			JsonQuery<?> json = (JsonQuery<?>)((JsonQueryHashMap)node).get(key);
