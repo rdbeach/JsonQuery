@@ -31,7 +31,11 @@ public class JsonQueryArrayList extends ArrayList<Object>{
 		this.set(i,(JsonQuery<?>)j._("obj"));
 	}
 	
-	public void set(int i,String value){
-		super.set(i,new JsonQuery<Object>(value));
+	public Object set(int i,Object value){
+		if(value instanceof JsonQuery){
+			return super.set(i,value);
+		}else{
+			return super.set(i,new JsonQuery<Object>(value));
+		}
 	}
 }
