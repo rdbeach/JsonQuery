@@ -198,8 +198,8 @@ Grab the "translatedText" value like this:
                 JsonQuery json = JsonQuery.fromJson(msg);
                 out(json._("data")._("translations")._(0).s("translatedText"));
                 
-                // Or using jget...
-                out(json.jget("data.translations[0].translatedText"));
+                // Or using _get (That's underscore get)
+                out(json._get("data.translations[0].translatedText"));
                 
 Output:
 
@@ -222,7 +222,7 @@ Hello world
             		.add("killer")
             		.add(1,"fluffy");
             
-        out(json.jget("family.pets[0]"));
+        out(json._get("family.pets[0]"));
         
 Output:
 
@@ -241,6 +241,7 @@ Brief description of the methods. Look at the java code for specifics.
                 
                 _: gets a branch in the JsonQuery Object tree
                 get: gets a leaf (returns object)
+                _get: retrieve a leaf value from a string containing javascript notation
                 s: gets a string leaf
                 i: gets an integer leaf
                 d: gets a double leaf
@@ -249,7 +250,7 @@ Brief description of the methods. Look at the java code for specifics.
                 toJson: turns any part of the JsonQuery object tree into a JSON string 
                 set: sets a value
                 jset: set a value from a JSON string
-                jget: retrieve a value from a string containing javascript notation
+                
                 
                 Array Specific Methods:
                 
@@ -264,7 +265,7 @@ Brief description of the methods. Look at the java code for specifics.
 
 The JSON string must start with braces {}.
 
-TODO: Still need to make more type specific versions of jget. Also thinking about adding search functions.
+TODO: Still need to make more type specific versions of _get. Also want to make a _set. Thinking about adding search functions.
 
 The aim here is convenience and flexibiliy, and to give the Java manipulation a "Javascript like feel". I have not tested the performance.
 
