@@ -5,7 +5,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
 
-@SuppressWarnings("rawtypes")
+
 public class JsonQuerySerializer implements JsonSerializer<JsonQuery> {
 
   public JsonElement serialize(final JsonQuery json, final Type typeOfT, final JsonSerializationContext context)
