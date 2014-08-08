@@ -273,7 +273,7 @@ rover
         
         		
          
-        // Print it out again. Str gets the value of the node as a string (regardless of type)
+        // Str gets the value of the node as a string (regardless of type)
         
         out(
         	json.$("data.translations[0].translatedText").str()
