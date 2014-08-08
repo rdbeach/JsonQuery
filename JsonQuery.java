@@ -1,6 +1,7 @@
 
 
 import java.util.Iterator;
+import java.util.Map.Entry;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -17,7 +18,7 @@ public class JsonQuery implements Iterable<Object>{
 	registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
 	create();
 	
-	
+	public transient String key;
 	public Object node;
 	
 	public static JsonQuery fromJson(String json){
@@ -92,6 +93,13 @@ public class JsonQuery implements Iterable<Object>{
 		return null;
 	}
 	
+	public String str() {
+		if(node!=null){
+			return node.toString();
+		}
+		return null;
+	}
+	
 	public String s() {
 		if(node!=null){
 			return (String) node;
@@ -141,6 +149,22 @@ public class JsonQuery implements Iterable<Object>{
 		if(node instanceof JsonQueryArray){
 			JsonQuery json = (JsonQuery)((JsonQueryArray)node).get(key);
 			if(json!=null) return json.node;
+		}
+		return null;
+	}
+	
+	public String str(String key) {
+		if(node instanceof JsonQueryObject){
+			JsonQuery json = (JsonQuery)((JsonQueryObject)node).get(key);
+			if(json!=null) return json.node.toString();
+		}
+		return null;
+	}
+	
+	public String str(int key) {
+		if(node instanceof JsonQueryArray){
+			JsonQuery json = (JsonQuery)((JsonQueryArray)node).get(key);
+			if(json!=null) return json.node.toString();
 		}
 		return null;
 	}
@@ -340,7 +364,18 @@ public class JsonQuery implements Iterable<Object>{
 		if(node instanceof JsonQueryArray){
 			return (JsonQueryArray) node;
 		}
-		return null;
+		if(node instanceof JsonQueryObject){
+			JsonQueryArray  array = new JsonQueryArray();
+			for (Entry<String, JsonQuery> entry : ((JsonQueryObject)node).entrySet()) {
+			    String key = entry.getKey();
+			    Object value = entry.getValue();
+			    JsonQuery j = new JsonQuery(((JsonQuery)value).node);
+			    j.key = key;
+			    array.add(j);
+			}
+			return array;
+		}
+		return new JsonQueryArray();
 	}
 
 	public Iterator<Object> iterator() {
@@ -349,6 +384,7 @@ public class JsonQuery implements Iterable<Object>{
 	}
 	
 	public boolean hasNext(){
+		// TODO
 		if(node instanceof JsonQueryArray){
 			//Iterator<Object> it = ((JsonQueryArrayList)node).iterator();
 			//if()
