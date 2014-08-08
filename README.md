@@ -428,7 +428,7 @@ TODO: Thinking about adding search functions, bulk add functions, and more advan
 
 The aim here is convenience and flexibiliy, and to give the Java manipulation a "Javascript like feel". I have not tested the performance.
 
-It is thread safe, though, I am not sure if Gson is entirely thread safe. This is why the JsonO class contains the static member ensureThreadSaftey. If you are running a singe threaded application, you can set this to false and use a statically created Gson, as opposed to creating the object on request.
+It is thread safe, though, I am not sure if Gson is entirely thread safe. This is why the JsonQuery class contains the static member ensureThreadSaftey. If you are running a singe threaded application, you can set this to false and use a statically created Gson, as opposed to creating the object on request.
 
 This code traverses the JsonElements tree and builds a corresponding tree of JsonQuery nodes (Containing HashMaps, ArrayLists, and Gson primitive types).
 
