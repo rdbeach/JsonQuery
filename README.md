@@ -33,8 +33,8 @@ Alternatively, you can edit the JsonQueryTest.java file so that it does not cont
 
 There are two ways to manipulate the json tree using JsonQuery.
 
-	Single node traversal
-	Javascript queries.
+	[Single node traversal]
+	[Javascript queries.]
 	
 	
 
@@ -70,10 +70,10 @@ Start with a JSON string:
     		
  String msg will contain the JSON string above. Now, convert the JSON string to a JsonQuery object. Out means System.out.println.
  
-                // create JSON object 
+                // create JsonQuery object 
                 JsonQuery json = JsonQuery.fromJson(msg);
                     
-                // or recreate JSON string from JSON object using class method
+                // or recreate JSON string from JsonQuery object using class method
                 out(json.toJson());
                 
                 
@@ -84,25 +84,26 @@ Output:
 
 
 
-#### Get some properties:
+#### Retrieve some properties from the newly created object:
                     
                 // Whats my city? (s gets a string)
                 out(json._("address").s("city"));
                 
-                //You can also use get, but this returns object so you must cast to the type you want
+                // Pasadena
+                
+                //You can also use "get", but this returns Object, so you must cast to the type you want
                 String city = (String) json._("address").get("city");
                 
                 out(city);
                 
+                // Pasadena
+                
                 // Whats my phone # (i gets an integer)
                 out(json._("phoneNumbers").i(1));
+                
+                // 9876543
 
 
-Output:
-
-Pasadena
-
-9876543
 
 
 
@@ -114,6 +115,8 @@ Pasadena
                 // Print new address in json format
                 out(json._("address").toJson());
                 
+                // {"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"}
+                
                 // Update phone numbers
                 JsonQuery phoneNumbers = json._("phoneNumbers");
                 phoneNumbers.add(0,5555555);
@@ -121,12 +124,10 @@ Pasadena
                 
                 // Print phone numbers in json format
                 out(phoneNumbers.toJson());
+                
+                // [5555555,9876543]
                     
-Output:
 
-{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"}
-
-[5555555,9876543]
 
 
 
@@ -137,10 +138,10 @@ Output:
                 
                 // Print the whole thing again
                 out(json.toJson());
+                
+                // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"hobbies":["tennis","hiking","swimming"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
                     
-Output:
 
-{"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"hobbies":["tennis","hiking","swimming"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
 
 
 
@@ -150,6 +151,8 @@ Output:
                 json._("hobbies").remove(2);
                 out(json._("hobbies").toJson());
                 
+                // ["tennis","hiking"]
+                
                 // Oh no, I lost my job
                 json.remove("role");
                 json.set("employed",false);
@@ -157,10 +160,14 @@ Output:
                 // Print the whole thing again
                 out(json.toJson());
                 
+                // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":false}
+                
                 // Go deeper in the tree
                 json._("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
                 
                 out(json._("properties").toJson());
+                
+                // {"pets":{"cat":"Mr Wiggles","dog":"Happy"},"salary":"$6000","age":"28 years"}
                 
                 // You can also append to the JSON object like this
                 
@@ -181,16 +188,10 @@ Output:
                 
                 // print all
                 out(json.toJson());
+                
+                // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"pets":{"cat":"Mr Happy","dog":"Wiggles"},"salary":"$6000","age":"28 years"},"employed":false}
  
-Output:
 
-["tennis","hiking"]
-
-{"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":false}
-
-{"pets":{"cat":"Mr Wiggles","dog":"Happy"},"salary":"$6000","age":"28 years"}
-
-{"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"pets":{"cat":"Mr Happy","dog":"Wiggles"},"salary":"$6000","age":"28 years"},"employed":false}
 
 
 
@@ -214,11 +215,9 @@ Grab the "translatedText" value like this:
                 JsonQuery json = JsonQuery.fromJson(msg);
                 out(json._("data")._("translations")._(0).s("translatedText"));
                 
+                // Hello world
                 
-Output:
-
-Hello world
-
+                
 
 
 
@@ -243,7 +242,6 @@ Hello world
         
         // rover
         
-
 
 
 
@@ -353,7 +351,7 @@ Hello world
 	    props.$("age").str()
 	);
 	
-	// 28
+	// 28 years
 
 
 
