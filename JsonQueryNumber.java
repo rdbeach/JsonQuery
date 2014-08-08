@@ -4,7 +4,7 @@
 @SuppressWarnings("serial")
 public class JsonQueryNumber extends Number{
 	
-	Number n;
+	private transient Number n;
     public JsonQueryNumber(Number n){
     	this.n = n;
     }

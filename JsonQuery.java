@@ -14,7 +14,7 @@ public class JsonQuery implements Iterable<Object>{
 	public static final Gson static_gson = new GsonBuilder().
 	registerTypeAdapter(JsonQuery.class, new JsonQueryDeserializer()).serializeNulls().
 	registerTypeAdapter(JsonQuery.class, new JsonQuerySerializer()).
-	registerTypeAdapter(LazilyParsedNumber.class, new JsonQueryNumberSerializer()).
+	registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
 	create();
 	
 	
@@ -24,7 +24,7 @@ public class JsonQuery implements Iterable<Object>{
 		Gson gson = new GsonBuilder().
 				registerTypeAdapter(JsonQuery.class, new JsonQueryDeserializer()).
 				registerTypeAdapter(JsonQuery.class, new JsonQuerySerializer()).
-				registerTypeAdapter(LazilyParsedNumber.class, new JsonQueryNumberSerializer()).
+				registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
 				serializeNulls().
 				create();
 		return gson.fromJson(json,JsonQuery.class);
@@ -37,7 +37,7 @@ public class JsonQuery implements Iterable<Object>{
 		gson = (gson!=null? gson : (ensureThreadSafety?new GsonBuilder().
 					registerTypeAdapter(JsonQuery.class, new JsonQueryDeserializer()).
 					registerTypeAdapter(JsonQuery.class, new JsonQuerySerializer()).
-					registerTypeAdapter(LazilyParsedNumber.class, new JsonQueryNumberSerializer()).
+					registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
 					serializeNulls().
 					create():static_gson));
 		return gson;
