@@ -25,6 +25,8 @@ Are two ways to manipulate the json tree in java.
 
 	Single node traversal
 	Javascript queries.
+	
+	
 
 #### We will begin with single node traversal. Here is an example.
 
@@ -238,27 +240,45 @@ rover
 
 
 ####Javascript queries (The fun part)
+
+		/**
+ 		{
+ 	                "data": {
+  	                        "translations": [
+   	                                {
+    	                                	"translatedText": "Hello world"
+                                        }
+  	                        ]
+                	}
+		}
+                */
+	
                 
         // Here are some examples of javascript queries (using the $ method)
         
         // This one does the same thing as the single node query above.
         // Value gets the value of the node as an object
+        
         out(
         	json.$("data.translations[0].translatedText").val()
         );
         
         // You can set a value like this
+        
         json.$("data.translations[0].translatedText").set("Bonjour");
          
         // Print it out again. Str gets the value of the node as a string (regardless of type)
+        
         out(
         	json.$("data.translations[0].translatedText").str()
         );
         
         // Sets the first position in the translations array to "Bonjour"
+        
         json.$("data.translations").add(0,"Bonjour");
         
-        // Adds a Json Object tothe first position in the translations array.
+        // Adds a Json Object to the first position in the translations array.
+        
         json.$("data.translations").jadd(0,"{\"french\":\"Bonjour\",\"english\":\"hello\"}");
         
         out(
@@ -275,6 +295,36 @@ Bonjour
 [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]
 
 
+
+####Tree traversal 
+
+	// Refering again to the first example...
+	
+	
+	// use the "each" funtion to iterate over both array elements and object members
+	
+	// phoneNumbers is an array. We will iterate over it, printing both the node type, and it's value
+
+	for(JsonQuery number: json.$("phoneNumbers").each()){
+            	out(
+            		number.type() + " " + number.key + number.str()
+            	);
+        }
+        
+        `This is a comment`
+            
+            out("starting object traversal");
+            
+            JsonQuery props = null;
+            for(JsonQuery addr : json.each()){
+            	if(addr.key.equals("properties")){
+            		props=addr;
+            	}
+            }
+            
+            out(
+            	props.$("pets.cat").val()
+            );
 
 
 
