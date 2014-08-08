@@ -3,6 +3,18 @@ JsonQuery
 
 A Gson extension that makes manipulating JSON in Java easier.
 
+## A quick look
+
+JsonQuery gives you Java tools for consuming, traversing, querying, editing, and producing JSON.
+
+A deeply nested JSON field can be extracted in one line:
+
+json.$("planets.earth.north_america.california.los_angeles.zip_codes.my_zip_code").val();
+
+This is not about trying to fit JSON to Java classes. Personally I don't think they're a good fit. JSON is dnynamic  and informal, and Java classes are rigid and formal.
+
+In my opinioon, its better to put your JSON in dynamic tree structures instead. If you agree, read on.
+
 
 ## Implementaion Notes
 
@@ -21,7 +33,7 @@ Alternatively, you can edit the JsonQueryTest.java file so that it does not cont
 
 ## Usage
 
-Are two ways to manipulate the json tree in java.
+There are two ways to manipulate the json tree using JsonQuery.
 
 	Single node traversal
 	Javascript queries.
