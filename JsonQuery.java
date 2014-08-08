@@ -86,7 +86,7 @@ public class JsonQuery implements Iterable<Object>{
 	
 	// Gets for the javascript queries
 	
-	public Object get() {
+	public Object val() {
 		if(node!=null){
 			return node;
 		}
