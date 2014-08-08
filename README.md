@@ -76,8 +76,9 @@ Start with a JSON string:
                 // or recreate JSON string from JsonQuery object using class method
                 out(json.toJson());
                 
-                // {"empID":100,"address":{"zipcode":91011,"city":"Pasadena","street":"Foolhill Blvd"},"role":"Java              Developer","cities":["Los Angeles","New York"],"permanent":false,"name":"Robert","phoneNumbers":[1234567,9876543],
-"properties":{"salary":"$6000","age":"28 years"},"employed":true}
+                // {"empID":100,"address":{"zipcode":91011,"city":"Pasadena","street":"Foolhill Blvd"},"role":"Java              	Developer","cities":["Los Angeles","New  					
+                York"],"permanent":false,"name":"Robert","phoneNumbers":[1234567,9876543],
+		"properties":{"salary":"$6000","age":"28 years"},"employed":true}
                 
                 
 
