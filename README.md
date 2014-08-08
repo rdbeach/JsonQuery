@@ -33,8 +33,8 @@ Alternatively, you can edit the JsonQueryTest.java file so that it does not cont
 
 There are two ways to manipulate the json tree using JsonQuery.
 
-	[Single node traversal]
-	[Javascript queries.]
+	- Single node traversal
+	- Javascript queries.
 	
 	
 
@@ -76,11 +76,11 @@ Start with a JSON string:
                 // or recreate JSON string from JsonQuery object using class method
                 out(json.toJson());
                 
-                
-Output: 
-
-{"empID":100,"address":{"zipcode":91011,"city":"Pasadena","street":"Foolhill Blvd"},"role":"Java              Developer","cities":["Los Angeles","New York"],"permanent":false,"name":"Robert","phoneNumbers":[1234567,9876543],
+                // {"empID":100,"address":{"zipcode":91011,"city":"Pasadena","street":"Foolhill Blvd"},"role":"Java              Developer","cities":["Los Angeles","New York"],"permanent":false,"name":"Robert","phoneNumbers":[1234567,9876543],
 "properties":{"salary":"$6000","age":"28 years"},"employed":true}
+                
+                
+
 
 
 
