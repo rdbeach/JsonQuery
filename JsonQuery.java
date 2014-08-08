@@ -95,7 +95,11 @@ public class JsonQuery implements Iterable<Object>{
 	
 	public String str() {
 		if(node!=null){
-			return node.toString();
+			if(node instanceof JsonQueryObject||node instanceof JsonQueryArray){
+				return this.toJson();
+			}else{
+				return node.toString();
+			}
 		}
 		return null;
 	}
@@ -156,7 +160,13 @@ public class JsonQuery implements Iterable<Object>{
 	public String str(String key) {
 		if(node instanceof JsonQueryObject){
 			JsonQuery json = (JsonQuery)((JsonQueryObject)node).get(key);
-			if(json!=null) return json.node.toString();
+			if(json!=null){
+				if(json.node instanceof JsonQueryObject||json.node instanceof JsonQueryArray){
+					return json.toJson();
+				}else{
+					return json.node.toString();
+				}
+			}
 		}
 		return null;
 	}
@@ -164,7 +174,13 @@ public class JsonQuery implements Iterable<Object>{
 	public String str(int key) {
 		if(node instanceof JsonQueryArray){
 			JsonQuery json = (JsonQuery)((JsonQueryArray)node).get(key);
-			if(json!=null) return json.node.toString();
+			if(json!=null){
+				if(json.node instanceof JsonQueryObject||json.node instanceof JsonQueryArray){
+					return json.toJson();
+				}else{
+					return json.node.toString();
+				}
+			}
 		}
 		return null;
 	}
