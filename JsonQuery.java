@@ -264,7 +264,6 @@ public class JsonQuery implements Iterable<Object>{
 	public JsonQuery jset(String value){
 		if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
-		System.out.println("here");
 		JsonQuery j = getGson().fromJson(json,JsonQuery.class);
 		node =  j._("obj").node;
 		return this;
