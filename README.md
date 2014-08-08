@@ -241,20 +241,21 @@ rover
 
 ####Javascript queries (The fun part)
 
-		/**
+	/**
  		{
  	                "data": {
   	                        "translations": [
-   	                                {
+					{
     	                                	"translatedText": "Hello world"
-                                        }
-  	                        ]
+					}
+  	                       	]
                 	}
 		}
-                */
+        */
 	
                 
         // Here are some examples of javascript queries (using the $ method)
+        
         
         // This one does the same thing as the single node query above.
         // Value gets the value of the node as an object
@@ -263,9 +264,15 @@ rover
         	json.$("data.translations[0].translatedText").val()
         );
         
+        	<span style='color:lightblue;font-style:italic'>Hello World</span>
+        
+        
+        
         // You can set a value like this
         
         json.$("data.translations[0].translatedText").set("Bonjour");
+        
+        		
          
         // Print it out again. Str gets the value of the node as a string (regardless of type)
         
@@ -273,9 +280,15 @@ rover
         	json.$("data.translations[0].translatedText").str()
         );
         
+        		<span style='color:lightblue;font-style:italic'>Bonjour</span>
+        		
+        		
+        
         // Sets the first position in the translations array to "Bonjour"
         
         json.$("data.translations").add(0,"Bonjour");
+        
+        
         
         // Adds a Json Object to the first position in the translations array.
         
@@ -284,15 +297,10 @@ rover
         out(
         	json.$("data.translations").toJson()
         );
+        
+        		<span style='color:lightblue;font-style:italic'>[{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]</span>
 
                 
-Output:
-
-Hello world
-
-Bonjour
-
-[{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]
 
 
 
