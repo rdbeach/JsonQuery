@@ -267,7 +267,7 @@ Hello world
         
         
         // This one does the same thing as the single node query above.
-        // Th "val" gets the value of the node as an object
+        // "val" gets the value of the node as an object
         
         out(
         	json.$("data.translations[0].translatedText").val()
@@ -318,7 +318,7 @@ Hello world
 
 ####Tree traversal 
 
-	// Refering again to the first example...
+	// Referring again to the first example...
 	
 	
 	// use the "each" funtion to iterate over both array elements and object members
