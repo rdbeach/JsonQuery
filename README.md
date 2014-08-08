@@ -373,15 +373,15 @@ Brief description of the methods. Will make this more detailed later, as this co
                 
                 Getting values:
                 
-                get: gets a leaf (returns object) (used with single node traversal)
-                val: gets a leaf (returns object) (used with javascript queries).
+                get: gets a node (returns object) (used with single node traversal)
+                val: gets a node (returns object) (used with javascript queries).
                 
-                str: gets a leaf in string format, regardless of type.
-                s: gets a string leaf (type sensitive)
-                i: gets an integer leaf (type sensitive)
-                d: gets a double leaf (type sensitive)
-                l: gets a long leaf (type sensitive)
-                b: gets a boolean leaf (type sensitive)
+                str: gets a node in string format, regardless of type.
+                s: gets a string node (type sensitive)
+                i: gets an integer node (type sensitive)
+                d: gets a double node (type sensitive)
+                l: gets a long node (type sensitive)
+                b: gets a boolean node (type sensitive)
                 
                 Settng Values:
                 
@@ -409,7 +409,7 @@ Brief description of the methods. Will make this more detailed later, as this co
                 	boolean
                 	null
                 	
-                isLeaf: returns true if the node is a leaf
+                isLeaf: returns true if the node is a leaf (endpoint)
                 isObject: returns true if the node is an object
                 isArray: returns true if the node is an array
                 
