@@ -257,7 +257,7 @@ rover
         
         
         // This one does the same thing as the single node query above.
-        // Value gets the value of the node as an object
+        // Th "val" gets the value of the node as an object
         
         out(
         	json.$("data.translations[0].translatedText").val()
