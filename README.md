@@ -237,23 +237,42 @@ rover
 
 ####Javascript queries (The fun part)
                 
-                // Here are some examples of javascript queries (using the $ method)
-                
-                // This one does the same thing as the single node query above.
-                out(json.$("data.translations[0].translatedText").get());
-                
-                // Or you can set a value like this
-                 out(json.$("data.translations[0].translatedText").set("Bonjour"));
-                 
-                // All the same stuff
-                
-                json.$("data.translations").add(0,"Bonjour");
-                
-                out(json.$("data.translations").jadd(0,"{\"french\":\"Bonjour\",\"english\":\"hello\"}"));
+        // Here are some examples of javascript queries (using the $ method)
+        
+        // This one does the same thing as the single node query above.
+        // Value gets the value of the node as an object
+        out(
+        	json.$("data.translations[0].translatedText").val()
+        );
+        
+        // You can set a value like this
+        json.$("data.translations[0].translatedText").set("Bonjour");
+         
+        // Print it out again. Str gets the value of the node as a string (regardless of type)
+        out(
+        	json.$("data.translations[0].translatedText").str()
+        );
+        
+        // Sets the first position in the translations array to "Bonjour"
+        json.$("data.translations").add(0,"Bonjour");
+        
+        // Adds a Json Object tothe first position in the translations array.
+        json.$("data.translations").jadd(0,"{\"french\":\"Bonjour\",\"english\":\"hello\"}")
+        
+        out(
+        	json.$("data.translations").toJson()
+        );
+
                 
 Output:
 
 Hello world
+
+Bonjour
+
+[{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]
+
+
 
 
 
