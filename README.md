@@ -231,9 +231,9 @@ Hello world
         	json._("family")._("pets").s(0)
         );
         
-Output:
+        // rover
+        
 
-rover
 
 
 
@@ -263,7 +263,7 @@ rover
         	json.$("data.translations[0].translatedText").val()
         );
         
-        *// Hello World*
+        // Hello World
         
         
         
@@ -279,7 +279,7 @@ rover
         	json.$("data.translations[0].translatedText").str()
         );
         
-        *// Bonjour*
+        // Bonjour
         		
         		
         
@@ -297,9 +297,11 @@ rover
         	json.$("data.translations").toJson()
         );
         
-       * // [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]*	
+       // [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]	
 
                 
+
+
 
 
 
@@ -311,33 +313,40 @@ rover
 	
 	// use the "each" funtion to iterate over both array elements and object members
 	
-	// phoneNumbers is an array. We will iterate over it, printing both the node type, and it's value
+	// "phoneNumbers" is an array. We will iterate over it, printing both the node type, and it's value
 
 	for(JsonQuery number: json.$("phoneNumbers").each()){
             	out(
-            		number.type() + " " + number.key + number.str()
+            		number.type() + " " + number.str()
             	);
         }
         
-        `This is a comment`
+	// number 1234567
+	// number 9876543
+
+        
             
-            out("starting object traversal");
-            
-            JsonQuery props = null;
-            for(JsonQuery addr : json.each()){
-            	if(addr.key.equals("properties")){
-            		props=addr;
-            	}
-            }
-            
-            out(
-            	props.$("pets.cat").val()
-            );
+	// Now let's iterate over the members of the json object. When you do this, each member will have a key property that you can examine to determine the member's name. You can call the type method for each member also. (See the API section below for possible types). This is not a recursive iteration. It only iterates over the direct members. If you want to iterate over the whole tree, you can write your own recursive function.
+	
+	// In particular, we will look for the "properties" member, and save it to our props variable.
+	
+	JsonQuery props = null;
+	for(JsonQuery member : json.each()){
+	    if(member.key.equals("properties")){
+	    	props=member;
+	    }
+	}
+	
+	// Now that we have properties, we will output the cat's name as a string.
+	
+	out(
+	    props.$("pets.cat").str()
+	);
 
 
 
 
-## Syntax
+## API
 
 Brief description of the methods. Will make this more detailed later, as this code is still in development. Look at the java code for specifics.
 
