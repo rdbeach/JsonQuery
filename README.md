@@ -156,12 +156,12 @@ Output:
                 // first remove pets
                 json._("properties").remove("pets");
                 
-                /** myPets:
+		/** myPets:
 	   		{
 	   		"cat":"Mr Happy",
 	   		"dog":"Wiggles"
 	   		}
-   		*/
+		*/
                 // create a pets JSON object
                 JsonQuery pets = JsonQuery.fromJson(myPets);
                 
@@ -186,7 +186,7 @@ Output:
 #### Another example:
 
                 /**
- 	{
+ 		{
  	                "data": {
   	                                "translations": [
    	                                                {
@@ -194,7 +194,7 @@ Output:
                                                 	}
   	                                ]
                 	}
-	}
+		}
                 */
                 
                 
@@ -226,7 +226,9 @@ Hello world
             		.add("killer")
             		.add(1,"fluffy");
             
-        out(json._get("family.pets[0]"));
+        out(
+        	json._("family")._("pets").s(0)
+        );
         
 Output:
 
@@ -257,7 +259,7 @@ rover
         json.$("data.translations").add(0,"Bonjour");
         
         // Adds a Json Object tothe first position in the translations array.
-        json.$("data.translations").jadd(0,"{\"french\":\"Bonjour\",\"english\":\"hello\"}")
+        json.$("data.translations").jadd(0,"{\"french\":\"Bonjour\",\"english\":\"hello\"}");
         
         out(
         	json.$("data.translations").toJson()
@@ -279,31 +281,60 @@ Bonjour
 
 ## Syntax
 
-Brief description of the methods. Look at the java code for specifics.
+Brief description of the methods. Will make this more detailed later, as this code is still in development. Look at the java code for specifics.
 
                 Static Methods:
                 JsonQuery.fromJson: Converts a JSON string to a JsonQuery object tree
+                toJson: turns any part of the JsonQuery object tree into a JSON string 
 
-                Generic methods:
+               Tree traversal:
                 
                 _: gets a branch in the JsonQuery Object tree
-                $: traverses the JsonQuery Object tree using javascript queries. (I am making this nomenclature up as I go.)
+                $: traverses the JsonQuery Object tree using javascript queries. 
                 
-                get: gets a leaf (returns object)
-                s: gets a string leaf
-                i: gets an integer leaf
-                d: gets a double leaf
-                l: gets a long leaf
-                b: gets a boolean leaf
-                toJson: turns any part of the JsonQuery object tree into a JSON string 
+                Getting values:
+                
+                get: gets a leaf (returns object) (used with single node traversal)
+                val: gets a leaf (returns object) (used with javascript queries).
+                
+                str: gets a leaf in string format, regardless of type.
+                s: gets a string leaf (type sensitive)
+                i: gets an integer leaf (type sensitive)
+                d: gets a double leaf (type sensitive)
+                l: gets a long leaf (type sensitive)
+                b: gets a boolean leaf (type sensitive)
+                
+                Settng Values:
+                
                 set: sets a value
                 jset: set a value from a JSON string
                 
                 
-                Array Specific Methods:
+                Array Specific Setting Methods:
                 
                 add: adds a value
                 jadd: adds a value from a JSON string
+                
+                Iteration:
+                
+                each: gets each element of an array or each member of an object
+                
+                Type determination:
+                
+                type : gets the type of the current node as a string.
+                	Possible types are:
+                	object
+                	array
+                	string
+                	number
+                	boolean
+                	null
+                	
+                isLeaf: returns true if the node is a leaf
+                isObject: returns true if the node is an object
+                isArray: returns true if the node is an array
+                
+                
                 
 		Inherited Methods: JsonQueryHashMap extends HashMap, and JsonQueryArrayList extends ArrayList.
 
