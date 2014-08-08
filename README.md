@@ -347,11 +347,13 @@ Hello world
 	    }
 	}
 	
-	// Now that we have properties, we will output the cat's name as a string.
+	// Now that we have "properties", we will output the age property as a string.
 	
 	out(
-	    props.$("pets.cat").str()
+	    props.$("age").str()
 	);
+	
+	// 28
 
 
 
@@ -362,9 +364,13 @@ Brief description of the methods. Will make this more detailed later, as this co
 
                 Static Methods:
                 JsonQuery.fromJson: Converts a JSON string to a JsonQuery object tree
+                
+                
+                JsonQuery Class Members
+                
                 toJson: turns any part of the JsonQuery object tree into a JSON string 
 
-               Tree traversal:
+                Tree traversal:
                 
                 _: gets a branch in the JsonQuery Object tree
                 $: traverses the JsonQuery Object tree using javascript queries. 
