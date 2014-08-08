@@ -11,12 +11,10 @@ A deeply nested JSON field can be extracted in one line:
 
 json.$("planets.earth.north_america.california.los_angeles.zip_codes.my_zip_code").val();
 
-This project is not about trying to fit JSON to Java classes. Personally, I don't think they're a good fit. JSON is dynamic  and informal, and Java classes are rigid and formal.
-
-In my opinion, it's better to put your JSON in dynamic tree structures instead. If you agree, read on.
+This project does not address fitting JSON to Java classes. Instead, the JSON information is encapsulated in a dynamic tree structure. From there, you can do with it whatever you want- write it to a class, save it to a database, or send a JSON response back to your client app after processing a request.
 
 
-## Implementaion Notes
+## Implementation Notes
 
 To use JsonQuery, you will first need to add the Gson library to your project. You may download it here:
 
