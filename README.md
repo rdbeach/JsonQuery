@@ -60,7 +60,6 @@ Start with a JSON string:
     		
  String msg will contain the JSON string above. Now, convert the JSON string to a JsonQuery object. Out means System.out.println.
  
- 
                 // create JSON object 
                 JsonQuery json = JsonQuery.fromJson(msg);
                     
@@ -264,7 +263,7 @@ rover
         	json.$("data.translations[0].translatedText").val()
         );
         
-        	<span style='color:lightblue;font-style:italic'>Hello World</span>
+        // Hello World
         
         
         
@@ -280,7 +279,7 @@ rover
         	json.$("data.translations[0].translatedText").str()
         );
         
-        		<span style='color:lightblue;font-style:italic'>Bonjour</span>
+        // Bonjour
         		
         		
         
@@ -298,9 +297,10 @@ rover
         	json.$("data.translations").toJson()
         );
         
-        		<span style='color:lightblue;font-style:italic'>[{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]</span>
+        // [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]	
 
                 
+
 
 
 
