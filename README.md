@@ -11,9 +11,9 @@ A deeply nested JSON field can be extracted in one line:
 
 json.$("planets.earth.north_america.california.los_angeles.zip_codes.my_zip_code").val();
 
-This is not about trying to fit JSON to Java classes. Personally I don't think they're a good fit. JSON is dnynamic  and informal, and Java classes are rigid and formal.
+This is not about trying to fit JSON to Java classes. Personally I don't think they're a good fit. JSON is dynamic  and informal, and Java classes are rigid and formal.
 
-In my opinioon, its better to put your JSON in dynamic tree structures instead. If you agree, read on.
+In my opinion, it's better to put your JSON in dynamic tree structures instead. If you agree, read on.
 
 
 ## Implementaion Notes
