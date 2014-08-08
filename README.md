@@ -263,7 +263,7 @@ rover
         	json.$("data.translations[0].translatedText").val()
         );
         
-        // Hello World
+        *// Hello World*
         
         
         
@@ -279,7 +279,7 @@ rover
         	json.$("data.translations[0].translatedText").str()
         );
         
-        // Bonjour
+        *// Bonjour*
         		
         		
         
@@ -297,7 +297,7 @@ rover
         	json.$("data.translations").toJson()
         );
         
-        // [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]	
+       * // [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]*	
 
                 
 
