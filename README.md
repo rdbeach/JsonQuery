@@ -70,13 +70,21 @@ Start with a JSON string:
     	}
     		
     		
- String msg will contain the JSON string above. Now, convert the JSON string to a JsonQuery object. Out means System.out.println.
+ String msg will contain the JSON string above. 
+ 
+ 
+ 
+ ####Now, convert the JSON string to a JsonQuery object. 
  
                 // create JsonQuery object 
+                
                 JsonQuery $ = JsonQuery.fromJson(msg);
+                
+                
                     
                 // or recreate JSON string from JsonQuery object using class method
-                out($.toJson());
+                
+                out($.toJson()); // out means System.out.println.
                 
                 // {"empID":100,"address":{"zipcode":91011,"city":"Pasadena","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"permanent":false,"name":"Robert","phoneNumbers":[1234567,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
                 
