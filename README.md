@@ -220,7 +220,7 @@ Start with a JSON string:
                 
 Grab the "translatedText" value like this:
 
-                JsonQuery j$ = JsonQuery.fromJson(msg);
+                JsonQuery $ = JsonQuery.fromJson(msg);
                 out($.get("data").get("translations").get(0).str("translatedText"));
                 
                 // Hello world
