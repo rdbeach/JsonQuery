@@ -87,8 +87,8 @@ Start with a JSON string:
 
 #### Retrieve some properties from the newly created object:
                     
-                // Whats my city? (s gets a string)
-                out($.get("address").s("city"));
+                // Whats my city? (str gets a string)
+                out($.get("address").str("city"));
                 
                 // Pasadena
                 
@@ -214,7 +214,7 @@ Start with a JSON string:
 Grab the "translatedText" value like this:
 
                 JsonQuery j$ = JsonQuery.fromJson(msg);
-                out($.get("data").get("translations").get(0).s("translatedText"));
+                out($.get("data").get("translations").get(0).str("translatedText"));
                 
                 // Hello world
                 
@@ -238,7 +238,7 @@ Grab the "translatedText" value like this:
             		.add(1,"fluffy");
             
         out(
-        	$.get("family").get("pets").s(0)
+        	$.get("family").get("pets").str(0)
         );
         
         // rover
@@ -401,22 +401,27 @@ Brief description of the methods. Will make this more detailed later, as this co
                 
                 toJson: turns any part of the JsonQuery object tree into a JSON string 
 
+
+
                 Tree traversal:
                 
-                _: gets the next node in the JsonQuery Object tree
-                get: finds a node JsonQuery Object tree using javascript queries. 
-                node: finds or creates a node in the JsonQuery Object tree using javascript queries. 
+                get: finds a node JsonQuery Object tree. 
+                node: finds or creates a node in the JsonQuery Object tree using javascript queries.
+                 _: gets the next node in the JsonQuery Object tree (mostly used internally)
+                
+                
                 
                 Getting values:
                 
                
                 val: gets a node (returns object) (used with javascript queries).
                 str: gets a node in string format, regardless of type.
-                s: gets a string node (type sensitive)
+           	b: gets a boolean node (type sensitive)
                 i: gets an integer node (type sensitive)
                 d: gets a double node (type sensitive)
                 l: gets a long node (type sensitive)
-                b: gets a boolean node (type sensitive)
+                
+                
                 
                 Settng Values:
                 
@@ -424,14 +429,27 @@ Brief description of the methods. Will make this more detailed later, as this co
                 jset: set a value from a JSON string
                 
                 
+                
                 Array Specific Setting Methods:
                 
                 add: adds a value
                 jadd: adds a value from a JSON string
                 
+                
+                
                 Iteration:
                 
                 each: gets each element of an array or each member of an object
+                
+                
+                
+                Removing:
+                
+                remove(string): Removing an object member
+                remove(int): Removing an array member
+                toNull() seting a node to null
+                
+                
                 
                 Type determination:
                 
