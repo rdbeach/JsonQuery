@@ -13,16 +13,18 @@ public class JsonQuery implements Iterable<Object>{
 	public static final boolean ensureThreadSafety=true;
 	
 	public static final Gson static_gson = new GsonBuilder().
-	registerTypeAdapter(JsonQuery.class, new JsonQueryDeserializer()).serializeNulls().
-	registerTypeAdapter(JsonQuery.class, new JsonQuerySerializer()).
-	registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
-	create();
+		disableHtmlEscaping().
+		registerTypeAdapter(JsonQuery.class, new JsonQueryDeserializer()).serializeNulls().
+		registerTypeAdapter(JsonQuery.class, new JsonQuerySerializer()).
+		registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
+		create();
 	
 	public transient String key;
 	public Object node;
 	
 	public static JsonQuery fromJson(String json){
 		Gson gson = new GsonBuilder().
+				disableHtmlEscaping().
 				registerTypeAdapter(JsonQuery.class, new JsonQueryDeserializer()).
 				registerTypeAdapter(JsonQuery.class, new JsonQuerySerializer()).
 				registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
@@ -42,6 +44,7 @@ public class JsonQuery implements Iterable<Object>{
 	
 	private Gson getGson(){
 		gson = (gson!=null? gson : (ensureThreadSafety?new GsonBuilder().
+					disableHtmlEscaping().
 					registerTypeAdapter(JsonQuery.class, new JsonQueryDeserializer()).
 					registerTypeAdapter(JsonQuery.class, new JsonQuerySerializer()).
 					registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).

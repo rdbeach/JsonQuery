@@ -1,9 +1,11 @@
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -38,11 +40,11 @@ public class JsonQueryDeserializer implements JsonDeserializer<JsonQuery> {
 	  }
 	  else if(elem.isJsonPrimitive()){
 	  		if(elem.getAsJsonPrimitive().isString()){
-	  				return new JsonQuery((String)elem.getAsJsonPrimitive().getAsString());
+					return new JsonQuery(elem.getAsJsonPrimitive().getAsString());
 	  		}else if(elem.getAsJsonPrimitive().isNumber()){
 	  			   return new JsonQuery(new JsonQueryNumber(elem.getAsJsonPrimitive().getAsNumber()));
 	  		}else if(elem.getAsJsonPrimitive().isBoolean()){
-		    		return new JsonQuery((Boolean)elem.getAsJsonPrimitive().getAsBoolean());
+		    	   return new JsonQuery((Boolean)elem.getAsJsonPrimitive().getAsBoolean());
 	  		}
 	  }
 	  else if(elem.isJsonArray()){
