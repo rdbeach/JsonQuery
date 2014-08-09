@@ -13,7 +13,7 @@ A deeply nested JSON field can be extracted in one line:
 
 $.get("planets.earth.north_america.california.los_angeles.zip_codes.my_zip_code").val();
 
-This project does not address fitting JSON to Java classes. Instead, the JSON information is encapsulated in a dynamic tree structure. From there, you can do with it whatever you want- write it to a class, save it to a database, or send a JSON response back to your client app after processing a request.
+This project does not address binding JSON to Java classes. Instead, the JSON information is encapsulated in a dynamic tree structure. From there, you can do with it whatever you want- write it to a class, save it to a database, or send a JSON response back to your client app after processing a request.
 
 
 ## Implementation Notes
