@@ -88,19 +88,19 @@ Start with a JSON string:
 #### Retrieve some properties from the newly created object:
                     
                 // Whats my city? (s gets a string)
-                out($._("address").s("city"));
+                out($.get("address").s("city"));
                 
                 // Pasadena
                 
                 //You can also use "val", but this returns Object, so you must cast to the type you want
-                String city = (String) $._("address").val("city");
+                String city = (String) $.get("address").val("city");
                 
                 out(city);
                 
                 // Pasadena
                 
                 // Whats my phone # (i gets an integer)
-                out($._("phoneNumbers").i(1));
+                out($.get("phoneNumbers").i(1));
                 
                 // 9876543
 
@@ -111,15 +111,15 @@ Start with a JSON string:
 #### Set some properties:
                     
                 // Change my city
-                $._("address").set("city","san fran");
+                $.get("address").set("city","san fran");
                 
                 // Print new address in json format
-                out($._("address").toJson());
+                out($.get("address").toJson());
                 
                 // {"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"}
                 
                 // Update phone numbers
-                JsonQuery phoneNumbers = $._("phoneNumbers");
+                JsonQuery phoneNumbers = $.get("phoneNumbers");
                 phoneNumbers.add(0,5555555);
                 phoneNumbers.remove(1);
                 
@@ -149,8 +149,8 @@ Start with a JSON string:
 #### Removing stuff. Changing stuff. You get the idea now:
                     
                 // Actually I don't like swimming
-                $._("hobbies").remove(2);
-                out($._("hobbies").toJson());
+                $.get("hobbies").remove(2);
+                out($.get("hobbies").toJson());
                 
                 // ["tennis","hiking"]
                 
@@ -164,16 +164,16 @@ Start with a JSON string:
                 // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":false}
                 
                 // Go deeper in the tree
-                $._("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
+                $.get("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
                 
-                out($._("properties").toJson());
+                out($.get("properties").toJson());
                 
                 // {"pets":{"cat":"Mr Wiggles","dog":"Happy"},"salary":"$6000","age":"28 years"}
                 
                 // You can also append to the JSON object like this
                 
                 // first remove pets
-                $._("properties").remove("pets");
+                $.get("properties").remove("pets");
                 
 		/** myPets:
 	   		{
@@ -185,7 +185,7 @@ Start with a JSON string:
                 JsonQuery pets = JsonQuery.fromJson(myPets);
                 
                 // add it
-                $._("properties").set("pets",pets);
+                $.get("properties").set("pets",pets);
                 
                 // print all
                 out($.toJson());
@@ -214,7 +214,7 @@ Start with a JSON string:
 Grab the "translatedText" value like this:
 
                 JsonQuery j$ = JsonQuery.fromJson(msg);
-                out($._("data")._("translations")._(0).s("translatedText"));
+                out($.get("data").get("translations").get(0).s("translatedText"));
                 
                 // Hello world
                 
@@ -238,7 +238,7 @@ Grab the "translatedText" value like this:
             		.add(1,"fluffy");
             
         out(
-        	$._("family")._("pets").s(0)
+        	$.get("family").get("pets").s(0)
         );
         
         // rover
@@ -306,8 +306,40 @@ Grab the "translatedText" value like this:
         	$.get("data.translations").toJson()
         );
         
-       // [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]	
-
+       // [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]
+       
+       // Instead of "get", you can use "node". If get cannot find a node in the tree, it simply returns without
+       // doing anything. Node, on the other hand, will first attempt to find the node, and, if it can't find 
+       // it, it will then attempt to create it:
+       
+       $.node("data.NEW_NODE").set("this is a new node");  //creates a new node
+       
+       // One rule that has been put in place is disallowing arbitrary type conversions. In other words, if a node
+       // has its type set to Array, it can only be converted to another type, such as object, by calling 
+       // set(Object value) on that node, or by first calling toNull() on the node, and then changing it.
+       
+       // The node operator will not attempt type conversion, so that if it encounters a type inconsistency, 
+       // such as applying an array method to an object node, it will fail and return null. So this won't work:
+       
+       
+	$.node("data.translations.NEW_NODE").set("this is a new node");  //fails and returns null
+	
+	// This fails because translations is an array, and it is being referred to as an object in the javascript
+	// query
+	
+	// This will work:
+	
+	$.node("data.translations[0].NEW_NODE").set("this is a new node");
+	
+	//So will this
+	
+	
+	$.node("data.translations[10].NEW_NODE").set("this is a new node");
+	
+	
+	// In this case, if the index is higher than the size of the array, null values will be inserted in the
+	// array up to the index of the inserted value.
+	
                 
 
 
