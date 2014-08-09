@@ -66,8 +66,8 @@ public class JsonQueryTest {
 			// Whats my city? (s gets a string)
 			out(json._("address").s("city"));
 			
-			//You can also use get, but this returns object so you must cast to the type you want
-			String city = (String) json._("address").get("city");
+			//You can also use val, but this returns object so you must cast to the type you want
+			String city = (String) json._("address").val("city");
 			out(city);
 			
 			// Whats my phone # (i gets an integer)
