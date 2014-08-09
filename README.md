@@ -74,12 +74,11 @@ Start with a JSON string:
  
  
  
- ####Now, convert the JSON string to a JsonQuery object. 
+ #### Now, convert the JSON string to a JsonQuery object. 
  
                 // create JsonQuery object 
                 
                 JsonQuery $ = JsonQuery.fromJson(msg);
-                
                 
                     
                 // or recreate JSON string from JsonQuery object using class method
