@@ -19,7 +19,7 @@ public class JsonQuery implements Iterable<Object>{
 		registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
 		create();
 	
-	public transient String key;
+	public transient String key="";
 	public Object node;
 	
 	public static JsonQuery fromJson(String json){
@@ -61,6 +61,11 @@ public class JsonQuery implements Iterable<Object>{
 		this.node = node;
 	}
 	
+	public JsonQuery(Object node, String key){
+		this.node = node;
+		this.key = key;
+	}
+	
 	// Single node tree traversal operator
 	
 	public JsonQuery _(String key){
@@ -68,7 +73,12 @@ public class JsonQuery implements Iterable<Object>{
 			JsonQuery j = (JsonQuery)((JsonQueryObject)node).get(key);
 			if(j!=null)return j;
 		}
-		return new JsonQuery(null);
+		return new JsonQuery(null,null);
+	}
+	
+	public boolean exists(){
+		if(key==null)return false;
+		return true;
 	}
 	
 	public JsonQuery _(int key){
@@ -76,7 +86,7 @@ public class JsonQuery implements Iterable<Object>{
 			JsonQuery j = (JsonQuery)((JsonQueryArray)node).get(key);
 			if(j!=null)return j;
 		}
-		return new JsonQuery(null);
+		return new JsonQuery(null,null);
 	}
 	
 	private String[] getKeys(String keyString){
@@ -98,7 +108,7 @@ public class JsonQuery implements Iterable<Object>{
 		}catch(Throwable e){
 			handleException(e);
 		}
-		return new JsonQuery(null);
+		return new JsonQuery(null,null);
 	}
 	// Javascript query tree traversal operator
 	
@@ -119,16 +129,13 @@ public class JsonQuery implements Iterable<Object>{
 		}catch(Throwable e){
 			handleException(e);
 		}
-		return new JsonQuery(null);
+		return new JsonQuery(null,null);
 	}
 	
 	// Gets for the javascript queries
 	
 	public Object val() {
-		if(node!=null){
 			return node;
-		}
-		return null;
 	}
 	
 	public String str() {
@@ -447,8 +454,7 @@ public class JsonQuery implements Iterable<Object>{
 			for (Entry<String, JsonQuery> entry : ((JsonQueryObject)node).entrySet()) {
 			    String key = entry.getKey();
 			    Object value = entry.getValue();
-			    JsonQuery j = new JsonQuery(((JsonQuery)value).node);
-			    j.key = key;
+			    JsonQuery j = new JsonQuery(((JsonQuery)value).node,key);
 			    array.add(j);
 			}
 			return array;
