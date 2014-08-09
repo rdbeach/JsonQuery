@@ -63,24 +63,24 @@ public class JsonQueryTest {
 			// or recreate JSON string from JSON object using class method
 			out(json.toJson());
 			
-			// Whats my city? (s gets a string)
-			out(json._("address").s("city"));
+			// Whats my city? (str gets a string)
+			out(json.get("address").str("city"));
 			
 			//You can also use val, but this returns object so you must cast to the type you want
-			String city = (String) json._("address").val("city");
+			String city = (String) json.get("address").val("city");
 			out(city);
 			
 			// Whats my phone # (i gets an integer)
-			out(json._("phoneNumbers").i(1));
+			out(json.get("phoneNumbers").i(1));
 			
 			// Change my city
-			json._("address").set("city","san fran");
+			json.get("address").set("city","san fran");
 			
 			// Print new address in json format
-			out(json._("address").toJson());
+			out(json.get("address").toJson());
 			
 			// Update phone numbers
-			JsonQuery phoneNumbers = json._("phoneNumbers");
+			JsonQuery phoneNumbers = json.get("phoneNumbers");
 			phoneNumbers.add(0,5555555);
 			phoneNumbers.remove(1);
 			
@@ -94,8 +94,8 @@ public class JsonQueryTest {
 			out(json.toJson());
 			
 			// Actually I don't like swimming
-			json._("hobbies").remove(2);
-			out(json._("hobbies").toJson());
+			json.get("hobbies").remove(2);
+			out(json.get("hobbies").toJson());
 			
 			// Oh no, I lost my job
 			json.remove("role");
@@ -105,18 +105,18 @@ public class JsonQueryTest {
 			out(json.toJson());
 			
 			// Go deeper in the tree
-			json._("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
-			out(json._("properties").toJson());
+			json.get("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
+			out(json.get("properties").toJson());
 			
 			// You can also append to the JSON object like this
 			// first remove pets
-			json._("properties").remove("pets");
+			json.get("properties").remove("pets");
 			
 			// create a pets JSON object
 			JsonQuery pets = JsonQuery.fromJson(myPets);
 			
 			// add it
-			json._("properties").set("pets",pets);
+			json.get("properties").set("pets",pets);
 			
 			// print all
 			out(json.toJson());

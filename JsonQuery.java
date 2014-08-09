@@ -190,14 +190,7 @@ public class JsonQuery implements Iterable<Object>{
 		return null;
 	}
 	
-	public String s() {
-		if(node!=null){
-			return (String) node;
-		}
-		return null;
-	}
-	
-	public boolean b() {
+	public boolean bool() {
 		if(node!=null){
 			return (Boolean) node;
 		}
@@ -275,25 +268,7 @@ public class JsonQuery implements Iterable<Object>{
 		return null;
 	}
 	
-	public String s(String key){
-		if(node instanceof JsonQueryObject){
-			JsonQuery json = (JsonQuery)((JsonQueryObject)node).get(key);
-			if(json!=null) return (String)json.node;
-		}
-		return null;
-	}
-	
-	public String s(int key){
-		if(node instanceof JsonQueryArray){
-			if(key<((JsonQueryArray)node).size()){
-				JsonQuery json = (JsonQuery)((JsonQueryArray)node).get(key);
-				if(json!=null) return (String)json.node;
-			}
-		}
-		return null;
-	}
-	
-	public boolean b(String key){
+	public boolean bool(String key){
 		if(node instanceof JsonQueryObject){
 			JsonQuery json = (JsonQuery)((JsonQueryObject)node).get(key);
 			if(json!=null) return (Boolean)json.node;
@@ -302,7 +277,7 @@ public class JsonQuery implements Iterable<Object>{
 		return false;
 	}
 	
-	public boolean b(int key){
+	public boolean bool(int key){
 		if(node instanceof JsonQueryArray){
 			if(key<((JsonQueryArray)node).size()){
 				JsonQuery json = (JsonQuery)((JsonQueryArray)node).get(key);
