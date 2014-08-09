@@ -423,7 +423,7 @@ Brief description of the methods. Will make this more detailed later, as this co
                
                 val: gets a node (returns object) (used with javascript queries).
                 str: gets a node in string format, regardless of type.
-           	b: gets a boolean node (type sensitive)
+		bool: gets a boolean node (type sensitive)
                 i: gets an integer node (type sensitive)
                 d: gets a double node (type sensitive)
                 l: gets a long node (type sensitive)
