@@ -9,7 +9,7 @@ A Gson extension that makes manipulating JSON in Java easier.
 
 JsonQuery gives you Java tools for consuming, traversing, querying, editing, and producing JSON.
 
-A deeply nested JSON field can be extracted in one line:
+For instance, a deeply nested JSON field can be extracted in one brief line:
 
 **$.get("planets.earth.north_america.california.los_angeles.zip_codes.my_zip_code").val();**
 
