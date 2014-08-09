@@ -74,7 +74,7 @@ Start with a JSON string:
  
  
  
- #### Now, convert the JSON string to a JsonQuery object. 
+#### Next, convert the JSON string to a JsonQuery object. 
  
                 // create JsonQuery object 
                 
