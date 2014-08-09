@@ -5,11 +5,13 @@ A Gson extension that makes manipulating JSON in Java easier.
 
 ## A quick look
 
+***NOTE*** This project is for testing only. It is very much a work in progress.
+
 JsonQuery gives you Java tools for consuming, traversing, querying, editing, and producing JSON.
 
 A deeply nested JSON field can be extracted in one line:
 
-json.$("planets.earth.north_america.california.los_angeles.zip_codes.my_zip_code").val();
+$.get("planets.earth.north_america.california.los_angeles.zip_codes.my_zip_code").val();
 
 This project does not address fitting JSON to Java classes. Instead, the JSON information is encapsulated in a dynamic tree structure. From there, you can do with it whatever you want- write it to a class, save it to a database, or send a JSON response back to your client app after processing a request.
 
@@ -71,10 +73,10 @@ Start with a JSON string:
  String msg will contain the JSON string above. Now, convert the JSON string to a JsonQuery object. Out means System.out.println.
  
                 // create JsonQuery object 
-                JsonQuery json = JsonQuery.fromJson(msg);
+                JsonQuery $ = JsonQuery.fromJson(msg);
                     
                 // or recreate JSON string from JsonQuery object using class method
-                out(json.toJson());
+                out($.toJson());
                 
                 // {"empID":100,"address":{"zipcode":91011,"city":"Pasadena","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"permanent":false,"name":"Robert","phoneNumbers":[1234567,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
                 
@@ -86,19 +88,19 @@ Start with a JSON string:
 #### Retrieve some properties from the newly created object:
                     
                 // Whats my city? (s gets a string)
-                out(json._("address").s("city"));
+                out($._("address").s("city"));
                 
                 // Pasadena
                 
-                //You can also use "get", but this returns Object, so you must cast to the type you want
-                String city = (String) json._("address").get("city");
+                //You can also use "val", but this returns Object, so you must cast to the type you want
+                String city = (String) $._("address").val("city");
                 
                 out(city);
                 
                 // Pasadena
                 
                 // Whats my phone # (i gets an integer)
-                out(json._("phoneNumbers").i(1));
+                out($._("phoneNumbers").i(1));
                 
                 // 9876543
 
@@ -109,15 +111,15 @@ Start with a JSON string:
 #### Set some properties:
                     
                 // Change my city
-                json._("address").set("city","san fran");
+                $._("address").set("city","san fran");
                 
                 // Print new address in json format
-                out(json._("address").toJson());
+                out($._("address").toJson());
                 
                 // {"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"}
                 
                 // Update phone numbers
-                JsonQuery phoneNumbers = json._("phoneNumbers");
+                JsonQuery phoneNumbers = $._("phoneNumbers");
                 phoneNumbers.add(0,5555555);
                 phoneNumbers.remove(1);
                 
@@ -133,10 +135,10 @@ Start with a JSON string:
 #### Use a JSON string to add to the JsonQuery object tree (with jset):
                     
                 // Add my hobbies
-                json.jset("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
+                $.jset("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
                 
                 // Print the whole thing again
-                out(json.toJson());
+                out($.toJson());
                 
                 // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"hobbies":["tennis","hiking","swimming"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
                     
@@ -147,31 +149,31 @@ Start with a JSON string:
 #### Removing stuff. Changing stuff. You get the idea now:
                     
                 // Actually I don't like swimming
-                json._("hobbies").remove(2);
-                out(json._("hobbies").toJson());
+                $._("hobbies").remove(2);
+                out($._("hobbies").toJson());
                 
                 // ["tennis","hiking"]
                 
                 // Oh no, I lost my job
-                json.remove("role");
-                json.set("employed",false);
+                $.remove("role");
+                $.set("employed",false);
                 
                 // Print the whole thing again
-                out(json.toJson());
+                out($.toJson());
                 
                 // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":false}
                 
                 // Go deeper in the tree
-                json._("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
+                $._("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
                 
-                out(json._("properties").toJson());
+                out($._("properties").toJson());
                 
                 // {"pets":{"cat":"Mr Wiggles","dog":"Happy"},"salary":"$6000","age":"28 years"}
                 
                 // You can also append to the JSON object like this
                 
                 // first remove pets
-                json._("properties").remove("pets");
+                $._("properties").remove("pets");
                 
 		/** myPets:
 	   		{
@@ -183,10 +185,10 @@ Start with a JSON string:
                 JsonQuery pets = JsonQuery.fromJson(myPets);
                 
                 // add it
-                json._("properties").set("pets",pets);
+                $._("properties").set("pets",pets);
                 
                 // print all
-                out(json.toJson());
+                out($.toJson());
                 
                 // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"pets":{"cat":"Mr Happy","dog":"Wiggles"},"salary":"$6000","age":"28 years"},"employed":false}
  
@@ -211,8 +213,8 @@ Start with a JSON string:
                 
 Grab the "translatedText" value like this:
 
-                JsonQuery json = JsonQuery.fromJson(msg);
-                out(json._("data")._("translations")._(0).s("translatedText"));
+                JsonQuery j$ = JsonQuery.fromJson(msg);
+                out($._("data")._("translations")._(0).s("translatedText"));
                 
                 // Hello world
                 
@@ -222,11 +224,11 @@ Grab the "translatedText" value like this:
 
 #### Chaining, chaining, chaining.:
 
-	json.set("name", "bob")
+	$.set("name", "bob")
                 .jset("test_scores","[]")._("test_scores")
                 .add(57).add(92).add(76);
             
-        json.jset("family", "{}")._("family")
+        $.jset("family", "{}")._("family")
             	.set("mother","Donna")
             	.set("father","Bill")
             	.set("sister", "Moonbeam")
@@ -236,7 +238,7 @@ Grab the "translatedText" value like this:
             		.add(1,"fluffy");
             
         out(
-        	json._("family")._("pets").s(0)
+        	$._("family")._("pets").s(0)
         );
         
         // rover
@@ -260,14 +262,14 @@ Grab the "translatedText" value like this:
         */
 	
                 
-        // Here are some examples of javascript queries (using the $ method)
+        // Here are some examples of javascript queries (using the get method)
         
         
         // This one does the same thing as the single node query above.
         // "val" gets the value of the node as an object
         
         out(
-        	json.$("data.translations[0].translatedText").val()
+        	$.get("data.translations[0].translatedText").val()
         );
         
         // Hello World
@@ -276,14 +278,14 @@ Grab the "translatedText" value like this:
         
         // You can set a value like this
         
-        json.$("data.translations[0].translatedText").set("Bonjour");
+        $.get("data.translations[0].translatedText").set("Bonjour");
         
         		
          
         // Str gets the value of the node as a string (regardless of type)
         
         out(
-        	json.$("data.translations[0].translatedText").str()
+        	$.get("data.translations[0].translatedText").str()
         );
         
         // Bonjour
@@ -292,16 +294,16 @@ Grab the "translatedText" value like this:
         
         // Sets the first position in the translations array to "Bonjour"
         
-        json.$("data.translations").add(0,"Bonjour");
+        $.get("data.translations").add(0,"Bonjour");
         
         
         
         // Adds a Json Object to the first position in the translations array.
         
-        json.$("data.translations").jadd(0,"{\"french\":\"Bonjour\",\"english\":\"hello\"}");
+        $.get("data.translations").jadd(0,"{\"french\":\"Bonjour\",\"english\":\"hello\"}");
         
         out(
-        	json.$("data.translations").toJson()
+        	$.get("data.translations").toJson()
         );
         
        // [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]	
@@ -322,7 +324,7 @@ Grab the "translatedText" value like this:
 	
 	// "phoneNumbers" is an array. We will iterate over it, printing both the node type, and it's value
 
-	for(JsonQuery number: json.$("phoneNumbers").each()){
+	for(JsonQuery number: $.get("phoneNumbers").each()){
             	out(
             		number.type() + " " + number.str()
             	);
@@ -338,7 +340,7 @@ Grab the "translatedText" value like this:
 	// In particular, we will look for the "properties" member, and save it to our props variable.
 	
 	JsonQuery props = null;
-	for(JsonQuery member : json.each()){
+	for(JsonQuery member : $.each()){
 	    if(member.key.equals("properties")){
 	    	props=member;
 	    }
@@ -369,14 +371,14 @@ Brief description of the methods. Will make this more detailed later, as this co
 
                 Tree traversal:
                 
-                _: gets a branch in the JsonQuery Object tree
-                $: traverses the JsonQuery Object tree using javascript queries. 
+                _: gets the next node in the JsonQuery Object tree
+                get: finds a node JsonQuery Object tree using javascript queries. 
+                node: finds or creates a node in the JsonQuery Object tree using javascript queries. 
                 
                 Getting values:
                 
-                get: gets a node (returns object) (used with single node traversal)
+               
                 val: gets a node (returns object) (used with javascript queries).
-                
                 str: gets a node in string format, regardless of type.
                 s: gets a string node (type sensitive)
                 i: gets an integer node (type sensitive)
@@ -424,7 +426,7 @@ Brief description of the methods. Will make this more detailed later, as this co
 
 The JSON string must start with braces {}.
 
-TODO: Thinking about adding search functions, bulk add functions, and more advanced query traversal methods. Any ideas? Suggestions?
+TODO: Need to improve the parsing of the json queries. It is not ready to handle arbitrary queries. Thinking about adding search functions, bulk add functions, and more advanced query traversal methods. Any ideas? Suggestions?
 
 The aim here is convenience and flexibiliy, and to give the Java manipulation a "Javascript like feel". I have not tested the performance.
 
