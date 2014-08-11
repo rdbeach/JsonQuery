@@ -87,7 +87,7 @@ public class JsonQuery implements Iterable<Object>{
 	}
 	
 	private String[] getKeys(String keyString){
-		return keyString.replace("[",".").replace("]","").split("[.]");
+		return keyString.replace("[",".").replace("]","").split("(?<!\\\\)[.]");
 	}
 	public JsonQuery node(String keyString) {
 		String[] keys = getKeys(keyString);
@@ -101,7 +101,7 @@ public class JsonQuery implements Iterable<Object>{
 					if(!j.exists()){
 						if(!(json.node instanceof JsonQueryArray)) {
 							if(json.node==null){
-								node = new JsonQueryObject();
+								json.node = new JsonQueryObject();
 							}else{
 								return new JsonQuery(null,null);
 							}
@@ -124,11 +124,10 @@ public class JsonQuery implements Iterable<Object>{
 				}else{
 					JsonQuery j = (JsonQuery) json._(keys[i]);
 					if(!j.exists()){
-						System.out.println("hi");
 						j.key="";
 						if(!(json.node instanceof JsonQueryObject)) {
 							if(json.node==null){
-								node = new JsonQueryObject();
+								json.node = new JsonQueryObject();
 							}else{
 								return new JsonQuery(null,null);
 							}
