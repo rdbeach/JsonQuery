@@ -11,7 +11,7 @@ public class JsonQuerySerializer implements JsonSerializer<JsonQuery> {
   public JsonElement serialize(final JsonQuery json, final Type typeOfT, final JsonSerializationContext context)
       throws JsonParseException {
 	
-	  return context.serialize(json.node);
+	  return context.serialize(json.element);
   }
 
 }
