@@ -22,7 +22,6 @@ public class JsonQueryDeserializer implements JsonDeserializer<JsonQuery> {
 	   JsonQueryObject map = new JsonQueryObject();
 	   final JsonObject jsonObject= json.getAsJsonObject();
 	   final  Set<Map.Entry<String,JsonElement>> elemset = jsonObject.entrySet();
-    
 	   for (Map.Entry<String, JsonElement> elem : elemset){
 		   // System.out.println(elem.getKey() + "/" + elem.getValue());
 		    String key = elem.getKey();
