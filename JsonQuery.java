@@ -1,7 +1,11 @@
 
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -73,8 +77,8 @@ public class JsonQuery implements Iterable<Object>{
 	
 	public JsonQuery _(String key){
 		if(element instanceof JsonQueryObject){
-			JsonQuery j = (JsonQuery)((JsonQueryObject)element).get(key);
-			if(j!=null)return j;
+			JsonQuery node = (JsonQuery)((JsonQueryObject)element).get(key);
+			if(node!=null)return node;
 		}
 		return new JsonQuery(null,null);
 	}
@@ -82,100 +86,420 @@ public class JsonQuery implements Iterable<Object>{
 	public JsonQuery _(int key){
 		if(element instanceof JsonQueryArray){
 			if(key<((JsonQueryArray)element).size()){
-				JsonQuery j = (JsonQuery)((JsonQueryArray)element).get(key);
-				if(j!=null)return j;
+				JsonQuery node = (JsonQuery)((JsonQueryArray)element).get(key);
+				if(node!=null)return node;
 			}
 		}
 		return new JsonQuery(null,null);
 	}
 	
-	private String[] getKeys(String keyString){
-		return keyString.replace("[",".").replace("]","").split("(?<!\\\\)[.]");
+	private String[] getKeys(String path){
+		String[] keys = path.replace("[",".").replace("]","").split("(?<!\\\\)[.]");
+		int count=0;
+		for(String key:keys){
+			keys[count]=key.replace("\\.", ".");
+			count++;
+		}
+		return keys;
 	}
-	public JsonQuery node(String keyString) {
-		String[] keys = getKeys(keyString);
-		JsonQuery json = this;
+	
+	// Multinode: tree traversal operator
+	
+	public JsonQuery get(String path) {
+		String[] keys = getKeys(path);
+		return path(this,keys,false);
+	}
+	
+	private JsonQuery path(JsonQuery node, Object[] keys, boolean addTreeInfo){
+		try{
+			int i=0;
+			for(i=0;i<keys.length;i++){
+				JsonQuery nextNode=null;
+				if(JsonQueryUtil.isInteger((String)keys[i])){
+					nextNode = (JsonQuery) node._(Integer.parseInt((String)keys[i]));
+				}else{
+					nextNode = (JsonQuery) node._((String)keys[i]);
+				}
+				if(nextNode!=null&&addTreeInfo){
+					if(((Object)node.element instanceof JsonQueryObject)){
+						nextNode.key=(String)keys[i];
+					}
+					nextNode.antenode=node;
+				}
+				node=nextNode;
+				if(node==null)break;
+			}
+			if(node!=null)return node;
+		}catch(Throwable e){
+			handleException(e);
+		}
+		return new JsonQuery(null,null);
+	}
+	
+	// Multinode: get or create a path
+	
+	public JsonQuery node(String path) {
+		String[] keys = getKeys(path);
+		JsonQuery node = this;
 		try{
 			int i=0;
 			for(i=0;i<keys.length;i++){
 				if(JsonQueryUtil.isInteger(keys[i])){
 					int index = Integer.parseInt(keys[i]);
-					JsonQuery j = (JsonQuery) json._(index);
-					if(!j.exists()){
-						if(!(json.element instanceof JsonQueryArray)) {
-							if(json.element==null){
-								json.element = new JsonQueryArray();
+					JsonQuery nextNode = (JsonQuery) node._(index);
+					if(!nextNode.exists()){
+						if(!(node.element instanceof JsonQueryArray)) {
+							if(node.element==null){
+								node.element = new JsonQueryArray();
 							}else{
 								return new JsonQuery(null,null);
 							}
 						}
-						JsonQueryArray array = (JsonQueryArray) json.element;
+						JsonQueryArray array = (JsonQueryArray) node.element;
 						for(int k = array.size(); k<index+1; k++){
 							array.add(new JsonQuery(null));
 						}
-						j.key="";
-						array.set(index,j);
+						nextNode.key="";
+						array.set(index,nextNode);
 						if(i+1<keys.length){
 							if(JsonQueryUtil.isInteger(keys[i+1])){
-								j.element=new JsonQueryArray();
+								nextNode.element=new JsonQueryArray();
 							}else{
-								j.element=new JsonQueryObject();
+								nextNode.element=new JsonQueryObject();
 							}
 						}
 					}
-					json=j;
+					node=nextNode;
 				}else{
-					JsonQuery j = (JsonQuery) json._(keys[i]);
-					if(!j.exists()){
-						j.key=keys[i];
-						if(!(json.element instanceof JsonQueryObject)) {
-							if(json.element==null){
-								json.element = new JsonQueryObject();
+					JsonQuery nextNode = (JsonQuery) node._(keys[i]);
+					if(!nextNode.exists()){
+						nextNode.key=keys[i];
+						if(!(node.element instanceof JsonQueryObject)) {
+							if(node.element==null){
+								node.element = new JsonQueryObject();
 							}else{
 								return new JsonQuery(null,null);
 							}
 						}
-						((JsonQueryObject) json.element).put(keys[i],j);
+						((JsonQueryObject) node.element).put(keys[i],nextNode);
 						if(i+1<keys.length){
 							if(JsonQueryUtil.isInteger(keys[i+1])){
-								j.element=new JsonQueryArray();
+								nextNode.element=new JsonQueryArray();
 							}else{
-								j.element=new JsonQueryObject();
+								nextNode.element=new JsonQueryObject();
 							}
 						}
 					}
-					json=j;
+					node=nextNode;
 				}
 			}
-			return json;
+			return node;
 		}catch(Throwable e){
 			handleException(e);
 		}
 		return new JsonQuery(null,null);
 	}
-	// Javascript query tree traversal operator
 	
-	public JsonQuery get(String keyString) {
-		String[] keys = getKeys(keyString);
-		JsonQuery json = this;
-		try{
-			int i=0;
-			for(i=0;i<keys.length;i++){
-				if(JsonQueryUtil.isInteger(keys[i])){
-					json = (JsonQuery) json._(Integer.parseInt(keys[i]));
+	// Returns a subset of the JsonQuery tree
+	
+	public JsonQueryArray jql(String queryString){
+		HashMap<String,String> clauses = parseQueryString(queryString);
+		if(clauses==null)return new JsonQueryArray();
+		return executeJQL(clauses);
+	}
+	
+	private JsonQueryArray executeJQL(HashMap<String,String> clauses){
+		
+		out("FROM clause");
+		
+		JsonQueryArray fromResultSet = new JsonQueryArray();
+		String fromClause="*";
+		if(clauses.containsKey("From"))fromClause=clauses.get("From");
+		if(fromClause.equals("*")){
+			this.key="root";
+			fromResultSet.add(this);
+		}else{
+			ArrayList<JsonQueryTokens> queries = getTokens(fromClause);
+			executeJQLClause(this,fromResultSet,queries);
+		}
+		
+		out("WHERE clause");
+		
+		if(clauses.containsKey("Where")){
+			String whereClause=clauses.get("Where");
+			executeWhereClause(fromResultSet,whereClause);
+		}
+		
+		out("SELECT clause");
+		
+		JsonQueryArray resultSet = new JsonQueryArray();
+		String selectClause=clauses.get("Select");
+		if(selectClause.equals("*")){
+			resultSet=fromResultSet;
+		}else{
+			ArrayList<JsonQueryTokens> queries = getTokens(selectClause);
+			for(JsonQuery node: fromResultSet){
+					executeJQLClause(node,resultSet,queries);
+			}
+		}
+		
+		return resultSet;
+	}
+	
+	private void executeJQLClause(JsonQuery node, 
+			JsonQueryArray resultSet,
+			ArrayList<JsonQueryTokens> queries
+			){
+		for(JsonQueryTokens tokens:queries){
+			int branches_up=0;
+			int i = tokens.path.length-1;
+			while(i>0&&(tokens.path[i].equals(""))){
+				branches_up++;
+				i--;
+			}
+			getResultSet(node,resultSet,tokens,0,branches_up);
+		}
+	}
+	
+	private void executeWhereClause(JsonQueryArray array,String whereClause){
+		
+		int gtIndex = whereClause.lastIndexOf(">");
+		int ltIndex = whereClause.lastIndexOf("<");
+		int equalsIndex = whereClause.lastIndexOf("=");
+		int operatorIndex = Math.max(Math.max(gtIndex, ltIndex), equalsIndex);
+		System.out.println("operator index:"+operatorIndex);
+		if(operatorIndex!=-1&&operatorIndex<whereClause.length()-1){
+			String[] operands = new String[2];
+			operands[0] = whereClause.substring(0,operatorIndex);
+			operands[1] = whereClause.substring(operatorIndex+1,whereClause.length());
+			System.out.println(operands[0]);
+			System.out.println(operands[1]);
+			Iterator<JsonQuery> iterator = array.iterator();
+			while (iterator.hasNext()) {
+			   JsonQuery node = iterator.next();
+				boolean pass = false;
+				for(JsonQuery subNode:node.jql("Select '*' From '"+operands[0]+"'")){
+				    Object val = subNode.val();
+					switch (whereClause.charAt(operatorIndex)){
+						case '<':
+							System.out.println("here");
+							if(val instanceof JsonQueryNumber){
+								if(((JsonQueryNumber)val).doubleValue()<Double.valueOf(operands[1]))pass=true;
+							}
+							break;
+						case '>':
+							System.out.println(">: "+ val + " " +operands[1]);
+							if(val instanceof JsonQueryNumber){
+								if(((JsonQueryNumber)val).doubleValue()>Double.valueOf(operands[1]))pass=true;
+							}
+							break;
+						case '=':
+							System.out.println("=: "+ val + " " +operands[1]);
+							if(val instanceof JsonQueryNumber){
+								if(((JsonQueryNumber)val).doubleValue()==Double.valueOf(operands[1]))pass=true;
+							}else if(val instanceof Boolean){
+								if((Boolean)val.equals(Boolean.valueOf(operands[1])))pass=true;
+							}else if(val instanceof String){
+								if(val.equals(operands[1]))pass=true;
+							}
+					}
+					System.out.println("pass: "+ pass);
+					if(!pass){
+						iterator.remove();
+						break;
+					}
+				}
+			}
+		}else{
+			array.clear();
+		}
+	}
+	
+	private void getResultSet(
+			JsonQuery node,
+			JsonQueryArray resultSet,
+			JsonQueryTokens tokens,
+			int currentIndex,
+			int branches_up){
+		out("Starting resultSet process");
+		ArrayList<String> searchPath= new ArrayList<String>();
+		boolean next = false;
+		boolean child = false;
+		int index;
+		int endOfPath = tokens.path.length-branches_up;
+		for(index = currentIndex;index<endOfPath;index++){
+			out("iterating path-index: "+index+ " value:" + tokens.path[index]);
+			if(tokens.path[index].equals("*")||tokens.path[index].equals("")){
+				next = true;
+				break;
+			}else if(tokens.path[index].equals(":")){
+				child=true;
+				break;
+			}else{
+				searchPath.add(tokens.path[index]);
+			}
+		}
+		if(!searchPath.isEmpty()){
+			out2("grabing path");
+			JsonQuery nextNode = path(node,searchPath.toArray(),true);
+			if(nextNode.element!=null){
+				if(index == endOfPath){
+					out2("adding from path: "+ nextNode.key);
+					addToResultSet(nextNode,resultSet,branches_up);
 				}else{
-					json = (JsonQuery) json._(keys[i]);
+					out("continue");
+					getResultSet(nextNode,resultSet,tokens,index,branches_up);
 				}
-				if(json==null)break;
 			}
-			if(json!=null)return json;
-		}catch(Throwable e){
-			handleException(e);
+			return;
 		}
-		return new JsonQuery(null,null);
+		if(next){
+			out("next");
+			index++;
+			if(node.element instanceof JsonQueryObject){
+				for (JsonQuery nextNode:node.each()){
+					nextNode.antenode=node;
+					if(index == endOfPath){
+						out("adding from next: "+ branches_up);
+						addToResultSet(nextNode,resultSet,branches_up);
+					}else{
+						getResultSet(nextNode,resultSet,tokens,index,branches_up);
+					}
+				}
+			}
+			return;
+		}
+		if(child){
+			index++;
+			if(index<endOfPath&&tokens.path[index]!=""&&tokens.path[index]!=""){
+				out("child search:"+index);
+				keySearch(node,resultSet,tokens,index,branches_up);
+			}
+		}
 	}
 	
-	// Gets for the javascript queries
+	private void addToResultSet(JsonQuery node,JsonQueryArray resultSet,int branches_up){
+		for(int i = 0;i<branches_up;i++){
+			node=node.antenode;
+		}
+		resultSet.add(node);
+	}
+	
+	private void keySearch(
+			JsonQuery node,
+			JsonQueryArray resultSet,
+			JsonQueryTokens tokens,
+			int currentIndex,
+			int branches_up){
+		
+		int endOfPath = tokens.path.length-branches_up;
+		String key = tokens.path[currentIndex];
+		if(node.element instanceof JsonQueryObject||node.element instanceof JsonQueryArray){
+			for (JsonQuery nextNode:node.each()){
+				out(nextNode.key);
+				nextNode.antenode=node;
+				if(nextNode.key.equals(key)){
+					out("match found");
+					if(currentIndex+1 == endOfPath){
+						out(branches_up);
+						out("adding from keysearch");
+						addToResultSet(nextNode,resultSet,branches_up);
+					}else{
+						out("not the end");
+						getResultSet(nextNode,resultSet,tokens,currentIndex+1,branches_up);
+					}
+				}else{
+					keySearch(nextNode,resultSet,tokens,currentIndex,branches_up);
+				}
+			}
+		}
+	}
+	
+	private HashMap<String,String> parseQueryString(String queryString){
+		String[] KEYWORDS = {"Select","From","Where","Order By","Limit"};
+		String[] tokens = queryString.trim().split("(?<!\\\\)'");
+		if(tokens.length<2){
+			return null;
+		}
+		HashMap<String,String> tokenMap = new HashMap<String,String>();
+		int precedence=0;
+		boolean selectFound=false;
+		for(int i = 0;i<tokens.length;i+=2){
+			if(tokens[i].trim().toLowerCase().startsWith("limit")){
+				tokens = tokens[i].split(" ");
+				if(tokens.length>1){
+					tokens[1].trim();
+				}
+				if(tokens.length!=2){
+					return null;
+				}
+				out(KEYWORDS[precedence]+" "+tokens[1]);
+				tokenMap.put("Limit",tokens[1]);
+			}else{
+				String keyword = tokens[i].trim();
+				boolean found = false;
+				int count = 0;
+				for (String kw : KEYWORDS) {
+				    if (keyword.equalsIgnoreCase(kw)) {
+				        if(precedence > count){
+				        	return null;
+				        }
+				        precedence=count;
+				        found = true;
+				        break;
+				    }
+				    count++;
+				}
+				if (!found||i+1>=tokens.length) {
+					return null;
+				}
+				if(keyword.equalsIgnoreCase("Select"))selectFound=true;
+				out(KEYWORDS[precedence]+" "+tokens[i+1]);
+				tokenMap.put(KEYWORDS[precedence],tokens[i+1]);
+			}
+		}
+		if(!selectFound){
+			return null;
+		}
+		return tokenMap;
+	}
+	
+	private ArrayList<JsonQueryTokens> getTokens(String queryString){
+		ArrayList<JsonQueryTokens> queryList = new ArrayList<JsonQueryTokens>();
+		String[] queries = queryString.split(",");
+		for(String query:queries){
+			JsonQueryTokens tokens = new JsonQueryTokens();
+			String[] paths = query.split("!");
+			int j = 0;
+			for(String path:paths){
+				out(path);
+				path = path.replaceAll("(?<!\\\\):",".:.").replace("[",".").replace("]","");
+				if(path.startsWith(".:"))path = path.substring(1);
+				String[] keys = path.split("(?<!\\\\)[.]",-1);
+				int k = 0;
+				for(String key:keys){
+					out(key);
+					keys[k]=key.replace("\\.", "."). // path
+							replace("\\*", "*"). // all
+							replace("\\:",":").  // child
+							replace("\\!","!").  // not
+							replace("\\,",",").  // separator
+							replace("\\[","[");  // keyword
+					k++;
+				}
+				if(j==0){
+					tokens.path=keys;
+				}else{
+					if(tokens.exceptionPaths==null)tokens.exceptionPaths = new ArrayList<String[]>();
+					tokens.exceptionPaths.add(keys);
+				}
+			}
+			queryList.add(tokens);
+		}
+		return queryList;
+	}
+	
+	// Multinode gets
 	
 	public Object val() {
 			return element;
@@ -224,8 +548,8 @@ public class JsonQuery implements Iterable<Object>{
 	
 	public Object val(String key) {
 		if(element instanceof JsonQueryObject){
-			JsonQuery json = (JsonQuery)((JsonQueryObject)element).get(key);
-			if(json!=null) return json.element;
+			JsonQuery node = (JsonQuery)((JsonQueryObject)element).get(key);
+			if(node!=null) return node.element;
 		}
 		return null;
 	}
@@ -233,8 +557,8 @@ public class JsonQuery implements Iterable<Object>{
 	public Object val(int key) {
 		if(element instanceof JsonQueryArray){
 			if(key<((JsonQueryArray)element).size()){
-				JsonQuery json = (JsonQuery)((JsonQueryArray)element).get(key);
-				if(json!=null) return json.element;
+				JsonQuery node = (JsonQuery)((JsonQueryArray)element).get(key);
+				if(node!=null) return node.element;
 			}
 		}
 		return null;
@@ -242,12 +566,12 @@ public class JsonQuery implements Iterable<Object>{
 	
 	public String str(String key) {
 		if(element instanceof JsonQueryObject){
-			JsonQuery json = (JsonQuery)((JsonQueryObject)element).get(key);
-			if(json!=null){
-				if(json.element instanceof JsonQueryObject||json.element instanceof JsonQueryArray){
-					return json.toJson();
-				}else if(json.element!=null){
-					return json.element.toString();
+			JsonQuery node = (JsonQuery)((JsonQueryObject)element).get(key);
+			if(node!=null){
+				if(node.element instanceof JsonQueryObject||node.element instanceof JsonQueryArray){
+					return node.toJson();
+				}else if(node.element!=null){
+					return node.element.toString();
 				}
 			}
 		}
@@ -257,12 +581,12 @@ public class JsonQuery implements Iterable<Object>{
 	public String str(int key) {
 		if(element instanceof JsonQueryArray){
 			if(key<((JsonQueryArray)element).size()){
-				JsonQuery json = (JsonQuery)((JsonQueryArray)element).get(key);
-				if(json!=null){
-					if(json.element instanceof JsonQueryObject||json.element instanceof JsonQueryArray){
-						return json.toJson();
-					}else if(json.element!=null){
-						return json.element.toString();
+				JsonQuery node = (JsonQuery)((JsonQueryArray)element).get(key);
+				if(node!=null){
+					if(node.element instanceof JsonQueryObject||node.element instanceof JsonQueryArray){
+						return node.toJson();
+					}else if(node.element!=null){
+						return node.element.toString();
 					}
 				}
 			}
@@ -272,8 +596,8 @@ public class JsonQuery implements Iterable<Object>{
 	
 	public boolean bool(String key){
 		if(element instanceof JsonQueryObject){
-			JsonQuery json = (JsonQuery)((JsonQueryObject)element).get(key);
-			if(json!=null) return (Boolean)json.element;
+			JsonQuery node = (JsonQuery)((JsonQueryObject)element).get(key);
+			if(node!=null) return (Boolean)node.element;
 			
 		}
 		return false;
@@ -282,8 +606,8 @@ public class JsonQuery implements Iterable<Object>{
 	public boolean bool(int key){
 		if(element instanceof JsonQueryArray){
 			if(key<((JsonQueryArray)element).size()){
-				JsonQuery json = (JsonQuery)((JsonQueryArray)element).get(key);
-				if(json!=null) return (Boolean)json.element;
+				JsonQuery node = (JsonQuery)((JsonQueryArray)element).get(key);
+				if(node!=null) return (Boolean)node.element;
 			}
 		}
 		return false;
@@ -291,8 +615,8 @@ public class JsonQuery implements Iterable<Object>{
 	
 	public int i(String key){
 		if(element instanceof JsonQueryObject){
-			JsonQuery json = (JsonQuery)((JsonQueryObject)element).get(key);
-			if(json!=null&&json.element!=null) return ((Number)(json.element)).intValue();
+			JsonQuery node = (JsonQuery)((JsonQueryObject)element).get(key);
+			if(node!=null&&node.element!=null) return ((Number)(node.element)).intValue();
 		}
 		return 0;
 	}
@@ -300,8 +624,8 @@ public class JsonQuery implements Iterable<Object>{
 	public int i(int key){
 		if(element instanceof JsonQueryArray){
 			if(key<((JsonQueryArray)element).size()){
-				JsonQuery json = (JsonQuery)((JsonQueryArray)element).get(key);
-				if(json!=null&&json.element!=null) return ((Number)(json.element)).intValue();
+				JsonQuery node = (JsonQuery)((JsonQueryArray)element).get(key);
+				if(node!=null&&node.element!=null) return ((Number)(node.element)).intValue();
 			}
 		}
 		return 0;
@@ -309,8 +633,8 @@ public class JsonQuery implements Iterable<Object>{
 	
 	public long l(String key){
 		if(element instanceof JsonQueryObject){
-				JsonQuery json = (JsonQuery)((JsonQueryObject)element).get(key);
-				if(json!=null&&json.element!=null) return ((Number)(json.element)).longValue();
+				JsonQuery node = (JsonQuery)((JsonQueryObject)element).get(key);
+				if(node!=null&&node.element!=null) return ((Number)(node.element)).longValue();
 		}
 		return 0;
 	}
@@ -318,8 +642,8 @@ public class JsonQuery implements Iterable<Object>{
 	public long l(int key){
 		if(element instanceof JsonQueryArray){
 			if(key<((JsonQueryArray)element).size()){
-					JsonQuery json = (JsonQuery)((JsonQueryArray)element).get(key);
-					if(json!=null&&json.element!=null) return ((Number)(json.element)).longValue();
+					JsonQuery node = (JsonQuery)((JsonQueryArray)element).get(key);
+					if(node!=null&&node.element!=null) return ((Number)(node.element)).longValue();
 			}
 		}
 		return 0;
@@ -327,8 +651,8 @@ public class JsonQuery implements Iterable<Object>{
 	
 	public double d(String key){
 		if(element instanceof JsonQueryObject){
-			JsonQuery json = (JsonQuery)((JsonQueryObject)element).get(key);
-			if(json!=null&&json.element!=null) return ((Number)(json.element)).doubleValue();
+			JsonQuery node = (JsonQuery)((JsonQueryObject)element).get(key);
+			if(node!=null&&node.element!=null) return ((Number)(node.element)).doubleValue();
 		}
 		return 0;
 	}
@@ -336,14 +660,14 @@ public class JsonQuery implements Iterable<Object>{
 	public double d(int key){
 		if(element instanceof JsonQueryArray){
 			if(key<((JsonQueryArray)element).size()){
-				JsonQuery json = (JsonQuery)((JsonQueryArray)element).get(key);
-				if(json!=null&&json.element!=null) return ((Number)(json.element)).doubleValue();
+				JsonQuery node = (JsonQuery)((JsonQueryArray)element).get(key);
+				if(node!=null&&node.element!=null) return ((Number)(node.element)).doubleValue();
 			}
 		}
 		return 0;
 	}
 	
-	// Sets for the javascript queries
+	// Multinode sets
 	
 	
 	public JsonQuery set(Object value){
@@ -359,8 +683,8 @@ public class JsonQuery implements Iterable<Object>{
 		if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
 		try{
-			JsonQuery j = getGson().fromJson(json,JsonQuery.class);
-			element =  j._("obj").element;
+			JsonQuery node = getGson().fromJson(json,JsonQuery.class);
+			element =  node._("obj").element;
 		}catch(Throwable e){
 			handleException(e);
 		}
@@ -413,7 +737,7 @@ public class JsonQuery implements Iterable<Object>{
 	
 	
 	
-	// adds for javascript query and single node traversal
+	// adds for multinode and single node traversal
 	
 	
 	
@@ -506,8 +830,8 @@ public class JsonQuery implements Iterable<Object>{
 			for (Entry<String, JsonQuery> entry : ((JsonQueryObject)element).entrySet()) {
 			    String key = entry.getKey();
 			    Object value = entry.getValue();
-			    JsonQuery j = new JsonQuery(((JsonQuery)value).element,key);
-			    array.add(j);
+			    JsonQuery node = new JsonQuery(((JsonQuery)value).element,key);
+			    array.add(node);
 			}
 			return array;
 		}
@@ -594,5 +918,11 @@ public class JsonQuery implements Iterable<Object>{
 		return null;
 	}
 	
+	private void out(Object o){
+		//System.out.println(o);
+	}
+	private void out2(Object o){
+		System.out.println(o);
+	}
 	
 }

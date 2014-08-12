@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import com.google.gson.Gson;
 
@@ -15,22 +16,22 @@ public class JsonQueryArray extends ArrayList<JsonQuery>{
 	public void jadd(int i,String value, Gson gson){
 	    if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
-		JsonQuery j = gson.fromJson(json,JsonQuery.class);
-		this.add(i,(JsonQuery)j._("obj"));
+		JsonQuery node = gson.fromJson(json,JsonQuery.class);
+		this.add(i,(JsonQuery)node._("obj"));
 	}
 	
 	public void jadd(String value, Gson gson){
 	    if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
-		JsonQuery j = gson.fromJson(json,JsonQuery.class);
-		this.add((JsonQuery)j._("obj"));
+		JsonQuery node = gson.fromJson(json,JsonQuery.class);
+		this.add((JsonQuery)node._("obj"));
 	}
 	
 	public void jset(int i,String value, Gson gson){
 	    if(value=="")value="\"\"";
 		String json = "{\"obj\":"+value+"}";
-		JsonQuery j = gson.fromJson(json,JsonQuery.class);
-		this.set(i,(JsonQuery)j._("obj"));
+		JsonQuery node = gson.fromJson(json,JsonQuery.class);
+		this.set(i,(JsonQuery)node._("obj"));
 	}
 	
 	public Object jsonQueryArraySet(int i,Object value){
@@ -39,5 +40,14 @@ public class JsonQueryArray extends ArrayList<JsonQuery>{
 		}else{
 			return super.set(i,new JsonQuery(value));
 		}
+	}
+	
+	public JsonQueryArray whereKeyEquals(String key){
+		JsonQueryArray array = new JsonQueryArray();
+		for(JsonQuery node:this){
+			if(node.key.equals(key))
+				array.add(node);
+		}
+		return array;
 	}
 }
