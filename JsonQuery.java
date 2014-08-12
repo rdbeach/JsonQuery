@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -13,6 +11,12 @@ import com.google.gson.internal.LazilyParsedNumber;
 
 
 public class JsonQuery implements Iterable<Object>{
+	
+	private static final String[] KEYWORDS = {"Select",
+			"From",
+			"Where",
+			"Order By",
+			"Limit"};
 
 	public static final boolean ensureThreadSafety=true;
 	
@@ -93,6 +97,13 @@ public class JsonQuery implements Iterable<Object>{
 		return new JsonQuery(null,null);
 	}
 	
+	// Multinode: tree traversal operator
+	
+	public JsonQuery get(String path) {
+		String[] keys = getKeys(path);
+		return path(this,keys,false);
+	}
+	
 	private String[] getKeys(String path){
 		String[] keys = path.replace("[",".").replace("]","").split("(?<!\\\\)[.]");
 		int count=0;
@@ -101,13 +112,6 @@ public class JsonQuery implements Iterable<Object>{
 			count++;
 		}
 		return keys;
-	}
-	
-	// Multinode: tree traversal operator
-	
-	public JsonQuery get(String path) {
-		String[] keys = getKeys(path);
-		return path(this,keys,false);
 	}
 	
 	private JsonQuery path(JsonQuery node, Object[] keys, boolean addTreeInfo){
@@ -200,7 +204,7 @@ public class JsonQuery implements Iterable<Object>{
 		return new JsonQuery(null,null);
 	}
 	
-	// Returns a subset of the JsonQuery tree
+	// JQL - JSON QUERY LANGUAGE
 	
 	public JsonQueryArray jql(String queryString){
 		HashMap<String,String> clauses = parseQueryString(queryString);
@@ -267,13 +271,13 @@ public class JsonQuery implements Iterable<Object>{
 		int ltIndex = whereClause.lastIndexOf("<");
 		int equalsIndex = whereClause.lastIndexOf("=");
 		int operatorIndex = Math.max(Math.max(gtIndex, ltIndex), equalsIndex);
-		System.out.println("operator index:"+operatorIndex);
+		out("operator index:"+operatorIndex);
 		if(operatorIndex!=-1&&operatorIndex<whereClause.length()-1){
 			String[] operands = new String[2];
 			operands[0] = whereClause.substring(0,operatorIndex);
 			operands[1] = whereClause.substring(operatorIndex+1,whereClause.length());
-			System.out.println(operands[0]);
-			System.out.println(operands[1]);
+			out(operands[0]);
+			out(operands[1]);
 			Iterator<JsonQuery> iterator = array.iterator();
 			while (iterator.hasNext()) {
 			   JsonQuery node = iterator.next();
@@ -282,19 +286,19 @@ public class JsonQuery implements Iterable<Object>{
 				    Object val = subNode.val();
 					switch (whereClause.charAt(operatorIndex)){
 						case '<':
-							System.out.println("here");
+							out("<: "+ val + " " +operands[1]);
 							if(val instanceof JsonQueryNumber){
 								if(((JsonQueryNumber)val).doubleValue()<Double.valueOf(operands[1]))pass=true;
 							}
 							break;
 						case '>':
-							System.out.println(">: "+ val + " " +operands[1]);
+							out(">: "+ val + " " +operands[1]);
 							if(val instanceof JsonQueryNumber){
 								if(((JsonQueryNumber)val).doubleValue()>Double.valueOf(operands[1]))pass=true;
 							}
 							break;
 						case '=':
-							System.out.println("=: "+ val + " " +operands[1]);
+							out("=: "+ val + " " +operands[1]);
 							if(val instanceof JsonQueryNumber){
 								if(((JsonQueryNumber)val).doubleValue()==Double.valueOf(operands[1]))pass=true;
 							}else if(val instanceof Boolean){
@@ -303,7 +307,7 @@ public class JsonQuery implements Iterable<Object>{
 								if(val.equals(operands[1]))pass=true;
 							}
 					}
-					System.out.println("pass: "+ pass);
+					out("pass: "+ pass);
 					if(!pass){
 						iterator.remove();
 						break;
@@ -340,11 +344,11 @@ public class JsonQuery implements Iterable<Object>{
 			}
 		}
 		if(!searchPath.isEmpty()){
-			out2("grabing path");
+			out("grabing path");
 			JsonQuery nextNode = path(node,searchPath.toArray(),true);
 			if(nextNode.element!=null){
 				if(index == endOfPath){
-					out2("adding from path: "+ nextNode.key);
+					out("adding from path: "+ nextNode.key);
 					addToResultSet(nextNode,resultSet,branches_up);
 				}else{
 					out("continue");
@@ -416,7 +420,7 @@ public class JsonQuery implements Iterable<Object>{
 	}
 	
 	private HashMap<String,String> parseQueryString(String queryString){
-		String[] KEYWORDS = {"Select","From","Where","Order By","Limit"};
+		
 		String[] tokens = queryString.trim().split("(?<!\\\\)'");
 		if(tokens.length<2){
 			return null;
@@ -484,7 +488,7 @@ public class JsonQuery implements Iterable<Object>{
 							replace("\\:",":").  // child
 							replace("\\!","!").  // not
 							replace("\\,",",").  // separator
-							replace("\\[","[");  // keyword
+							replace("\\'","'");  // separator
 					k++;
 				}
 				if(j==0){
@@ -920,9 +924,6 @@ public class JsonQuery implements Iterable<Object>{
 	
 	private void out(Object o){
 		//System.out.println(o);
-	}
-	private void out2(Object o){
-		System.out.println(o);
 	}
 	
 }
