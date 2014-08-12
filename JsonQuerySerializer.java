@@ -6,9 +6,9 @@ import com.google.gson.JsonSerializer;
 
 
 
-public class JsonQuerySerializer implements JsonSerializer<JsonQuery> {
+public class JsonQuerySerializer implements JsonSerializer<JsonQueryNode> {
 
-  public JsonElement serialize(final JsonQuery json, final Type typeOfT, final JsonSerializationContext context)
+  public JsonElement serialize(final JsonQueryNode json, final Type typeOfT, final JsonSerializationContext context)
       throws JsonParseException {
 	
 	  return context.serialize(json.element);
