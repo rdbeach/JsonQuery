@@ -1,7 +1,15 @@
+package src.JSQL;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+
+import src.JsonQueryArray;
+import src.JsonQueryNode;
+import src.JsonQueryNumber;
+import src.JsonQueryObject;
+import src.JsonQueryTokens;
 
 
 public class JQLEngine {
@@ -121,7 +129,7 @@ public class JQLEngine {
 					branches_up++;
 					i--;
 				}
-				buildResultSet(node,resultSet,tokens,0,branches_up,(tokens.exceptionPaths.size()==0?false:true));
+				buildResultSet(node,resultSet,tokens,0,branches_up,(tokens.exceptionPaths==null||tokens.exceptionPaths.size()==0?false:true));
 			}
 		}
 		
@@ -145,7 +153,7 @@ public class JQLEngine {
 				}
 			}
 			
-			out("in while clause: operator index:"+operator_index + " " + operator_length);
+			out("In where clause: operator index:"+operator_index + " " + operator_length);
 			
 			if(operator_index!=-1&&operator_index+operator_length<whereClause.length()){
 				
@@ -153,8 +161,8 @@ public class JQLEngine {
 				operands[0] = whereClause.substring(0,operator_index);
 				operands[1] = whereClause.substring(operator_index+operator_length,whereClause.length());
 				
-				out(operands[0]);
-				out(operands[1]);
+				out("where clause op1:"+operands[0]);
+				out("where clause op2:"+operands[1]);
 				Iterator<JsonQueryNode> iterator = array.iterator();
 				while (iterator.hasNext()) {
 				   JsonQueryNode node = iterator.next();
@@ -208,7 +216,7 @@ public class JQLEngine {
 								break;
 							
 						}
-						out("pass: "+ pass);
+						out("where clause pass: "+ pass);
 						if(!pass){
 							iterator.remove();
 							break;
@@ -227,7 +235,7 @@ public class JQLEngine {
 				int currentIndex,
 				int branches_up,
 				boolean check){
-			out("Starting resultSet process");
+			out("Fetching resultSet:");
 			ArrayList<String> searchPath= new ArrayList<String>();
 			boolean next = false;
 			boolean child = false;
@@ -246,16 +254,15 @@ public class JQLEngine {
 				}
 			}
 			if(!searchPath.isEmpty()){
-				out("grabing path");
+				out("build result: grabing path");
 				JsonQueryNode nextNode = node.path(node,searchPath.toArray(),true);
 				if(checkNode(nextNode,tokens,branches_up,check)){
-					out(nextNode.element);
 					if(nextNode.element!=null){
 						if(index == endOfPath){
-							out("adding from path: "+ nextNode.key);
+							out("build result: adding from path: "+ nextNode.key);
 							addToResultSet(nextNode,resultSet,branches_up,cntx.include);
 						}else{
-							out("continue");
+							out("build result: continue");
 							buildResultSet(nextNode,resultSet,tokens,index,branches_up,cntx.check);
 						}
 					}
@@ -263,7 +270,7 @@ public class JQLEngine {
 				return;
 			}
 			if(next){
-				out("next");
+				out("build result: next");
 				index++;
 				int keyIndex = 0;
 				for (JsonQueryNode nextNode:node.each()){
@@ -273,10 +280,10 @@ public class JQLEngine {
 					nextNode.setAntenode(node);
 					if(checkNode(nextNode,tokens,branches_up,check)){
 						if(index == endOfPath){
-							out("adding from next: "+ branches_up);
+							out("build result: adding from next");
 							addToResultSet(nextNode,resultSet,branches_up,cntx.include);
 						}else{
-							out("continue");
+							out("build result: continue");
 							buildResultSet(nextNode,resultSet,tokens,index,branches_up,cntx.check);
 						}
 					}
@@ -286,9 +293,13 @@ public class JQLEngine {
 			}
 			if(child){
 				index++;
-				if(index<endOfPath&&!tokens.path[index].equals(EMPTY)&&!tokens.path[index].equals(EMPTY)){
-					out("child search:"+index);
-					keySearch(node,resultSet,tokens,index,branches_up,check);
+				if(index<endOfPath){
+					if(!tokens.path[index].equals(CHILD_OPERATOR)&&!tokens.path[index].equals(ALL_OPERATOR)&&!tokens.path[index].equals(EMPTY)){
+						out("build result: child search:"+index);
+						keySearch(node,resultSet,tokens,index,branches_up,check);
+					}
+				}else{
+					returnAll(node,resultSet,tokens,index,branches_up,check);
 				}
 			}
 		}
@@ -321,17 +332,42 @@ public class JQLEngine {
 					nextNode.setAntenode(node);
 					if(checkNode(nextNode,tokens,branches_up,check)){
 						if(nextNode.key.equals(key)){
-							out("match found");
+							out("keysearch: match found");
 							if(currentIndex+1 == endOfPath){
-								out("adding from keysearch");
+								out("keysearch: :adding node");
 								addToResultSet(nextNode,resultSet,branches_up,cntx.include);
 							}else{
-								out("continue looking");
+								out("keysearch: continue looking");
 								buildResultSet(nextNode,resultSet,tokens,currentIndex+1,branches_up,cntx.check);
 							}
 						}else{
 							keySearch(nextNode,resultSet,tokens,currentIndex,branches_up,cntx.check);
 						}
+					}
+				}
+			}
+		}
+		
+		private void returnAll(
+				JsonQueryNode node,
+				JsonQueryArray resultSet,
+				JsonQueryTokens tokens,
+				int currentIndex,
+				int branches_up,
+				boolean check){
+			
+			if(node.element instanceof JsonQueryObject||node.element instanceof JsonQueryArray){
+				int keyIndex = 0;
+				for (JsonQueryNode nextNode:node.each()){
+					if((Object)node instanceof JsonQueryArray){
+						nextNode.key = String.valueOf(keyIndex++);
+					}
+					nextNode.setAntenode(node);
+					if(checkNode(nextNode,tokens,branches_up,check)){
+							out("returnAll: match found");
+							out("returnAll: :adding node");
+							addToResultSet(nextNode,resultSet,branches_up,cntx.include);
+							returnAll(nextNode,resultSet,tokens,currentIndex,branches_up,cntx.check);
 					}
 				}
 			}
@@ -355,7 +391,7 @@ public class JQLEngine {
 					if(tokens.length!=2){
 						return null;
 					}
-					out(KEYWORDS[precedence]+" "+tokens[1]);
+					out("parseQuery: " +KEYWORDS[precedence]+" "+tokens[1]);
 					tokenMap.put(LIMIT,tokens[1]);
 				}else{
 					String keyword = tokens[i].trim();
@@ -376,7 +412,7 @@ public class JQLEngine {
 						return null;
 					}
 					if(keyword.equalsIgnoreCase(SELECT))selectFound=true;
-					out(KEYWORDS[precedence]+" "+tokens[i+1]);
+					out("parseQuery: " +KEYWORDS[precedence]+" "+tokens[i+1]);
 					tokenMap.put(KEYWORDS[precedence],tokens[i+1]);
 				}
 			}
@@ -387,7 +423,7 @@ public class JQLEngine {
 		}
 		
 		private ArrayList<JsonQueryTokens> getTokens(String queryString){
-			out("in get tokens");
+			out("start getTokens");
 			ArrayList<JsonQueryTokens> queryList = new ArrayList<JsonQueryTokens>();
 			String[] queries = queryString.split(QUERY_SEPARATOR);
 			for(String query:queries){
@@ -395,16 +431,17 @@ public class JQLEngine {
 				String[] paths = query.split(NOT_OPERATOR);
 				int j = 0;
 				for(String path:paths){
-					out(path);
+					out("getTokens: path:" +path);
 					path = path.
 							replaceAll(NOT_BACKSLASH+CHILD_OPERATOR,PATH_DELIMETER+CHILD_OPERATOR+PATH_DELIMETER).
 							replaceAll(NOT_BACKSLASH+LEFT_BRACKET_ESCAPE,PATH_DELIMETER).
 							replaceAll(NOT_BACKSLASH+RIGHT_BRACKET_ESCAPE,EMPTY);
 					if(path.startsWith(PATH_DELIMETER+CHILD_OPERATOR))path = path.substring(1);
+					if(path.endsWith(CHILD_OPERATOR+PATH_DELIMETER))path = path.substring(0,path.length()-1);
 					String[] keys = path.split(NOT_BACKSLASH+PATH_DELIMETER_REGEX,-1);
 					int k = 0;
 					for(String key:keys){
-						out(key);
+						out("getTokens: key:" +key);
 						for(int count=0;count<SPECIAL_CHARS.length;count++){
 							key=key.replace(DOUBLE_BACKSLASH+SPECIAL_CHARS[count], SPECIAL_CHARS[count]); // path
 						}
@@ -417,6 +454,7 @@ public class JQLEngine {
 						if(tokens.exceptionPaths==null)tokens.exceptionPaths = new ArrayList<String[]>();
 						tokens.exceptionPaths.add(keys);
 					}
+					j++;
 				}
 				queryList.add(tokens);
 			}
@@ -432,7 +470,7 @@ public class JQLEngine {
 			
 			if(check){
 				
-				out("checking node");
+				out("checknode:checking node");
 				
 				JsonQueryNode node = _node;
 				ArrayList<String> array = new ArrayList<String>();
@@ -451,6 +489,7 @@ public class JQLEngine {
 						array.remove(0);
 					}
 					// debug
+					out2("checknode: ");
 					for(int i = 0;i<array.size();i++){
 						out2(array.get(i)+" ");
 					}
@@ -458,7 +497,7 @@ public class JQLEngine {
 					int arrayIndex = 0;
 					int index;
 					for(index =0;index<exceptions.length;index++){
-						out("iterating exception:"+1+" execption-index: "+index+ " value:" + exceptions[index]+" against path vlaue:"+array.get(arrayIndex));
+						out("checknode:iterating exception:"+1+" execption-index: "+index+ " value:" + exceptions[index]+" against path vlaue:"+array.get(arrayIndex));
 						
 						if(exceptions[index].equals(ALL_OPERATOR)||exceptions[index].equals(EMPTY)){
 							if(array.get(arrayIndex)==null){
@@ -475,23 +514,24 @@ public class JQLEngine {
 								}else{
 									int newIndex = array.indexOf(exceptions[index+1]);
 									if(newIndex==-1){
-										out("did not found child");
+										out("checknode:did not found child");
 										break;
 									}else{
 										for(int j = arrayIndex;j<newIndex;j++){
 											array.set(j,null);
 										}
 										arrayIndex=newIndex;
-										out("found child at :" +arrayIndex);
+										out("checknode:found child at :" +arrayIndex);
 									}
 									index++;
 								}
 							}
-							break;
 						}else{
 							if(!exceptions[index].equals(array.get(arrayIndex))){
-								out("stop checking");
-								cntx.check = false;
+								if(array.get(arrayIndex)!=null){
+									out("checknode:set stop checking");
+									cntx.check = false;
+								}
 								break;
 							}
 						}
@@ -500,10 +540,8 @@ public class JQLEngine {
 					}
 					if(index==exceptions.length){
 						cntx.include=false;
-					}
-					if(!cntx.include){
-						if(exceptions[index-1]==CHILD_OPERATOR){
-							out("stop iterating");
+						if(exceptions[index-1].equals(CHILD_OPERATOR)){
+							out("checknode: set stop iterating");
 							resume = false;
 						}else{
 							if(array.get(arrayIndex)!=null){
@@ -512,13 +550,13 @@ public class JQLEngine {
 						}
 					}
 					if(!cntx.include){
-						out("exclude this node");
+						out("checknode: excluding this node");
 						break;
 					}else{
-						out("include this node");
+						out("checknode:including this node");
 					}
 				}
-				out("end check");
+				out("checknode:end check");
 			}
 			return resume;
 		}

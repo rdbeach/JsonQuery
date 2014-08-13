@@ -1,3 +1,4 @@
+package src;
 
 public class JsonQueryUtil {
 	public static boolean isInteger( String input ) {
