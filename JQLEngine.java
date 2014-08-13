@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -38,13 +39,27 @@ public class JQLEngine {
 	
 	private static final String[] WHERECLAUSE_OPERATORS = {"=" ,"!=","<","<=",">",">="};
 	
+	public JQLContext cntx;
+	
+	public JQLEngine(){
+		this.cntx = new JQLContext();
+	}
+	
 	//TODO delete
 	private void out(Object msg){
 		System.out.println(msg);
 	}
+	private void out2(Object msg){
+		System.out.print(msg);
+	}
 	
 	public static final JQLEngine getJQL(){
 		return new JQLEngine();
+	}
+	
+	public class JQLContext{
+		public boolean include=true;
+		public boolean check=true;
 	}
 	
 	public JsonQueryArray execute(JsonQueryNode node,String queryString){
@@ -106,7 +121,7 @@ public class JQLEngine {
 					branches_up++;
 					i--;
 				}
-				buildResultSet(node,resultSet,tokens,0,branches_up);
+				buildResultSet(node,resultSet,tokens,0,branches_up,(tokens.exceptionPaths.size()==0?false:true));
 			}
 		}
 		
@@ -130,7 +145,7 @@ public class JQLEngine {
 				}
 			}
 			
-			out("operator index:"+operator_index + " " + operator_length);
+			out("in while clause: operator index:"+operator_index + " " + operator_length);
 			
 			if(operator_index!=-1&&operator_index+operator_length<whereClause.length()){
 				
@@ -210,7 +225,8 @@ public class JQLEngine {
 				JsonQueryArray resultSet,
 				JsonQueryTokens tokens,
 				int currentIndex,
-				int branches_up){
+				int branches_up,
+				boolean check){
 			out("Starting resultSet process");
 			ArrayList<String> searchPath= new ArrayList<String>();
 			boolean next = false;
@@ -232,13 +248,16 @@ public class JQLEngine {
 			if(!searchPath.isEmpty()){
 				out("grabing path");
 				JsonQueryNode nextNode = node.path(node,searchPath.toArray(),true);
-				if(nextNode.element!=null){
-					if(index == endOfPath){
-						out("adding from path: "+ nextNode.key);
-						addToResultSet(nextNode,resultSet,branches_up);
-					}else{
-						out("continue");
-						buildResultSet(nextNode,resultSet,tokens,index,branches_up);
+				if(checkNode(nextNode,tokens,branches_up,check)){
+					out(nextNode.element);
+					if(nextNode.element!=null){
+						if(index == endOfPath){
+							out("adding from path: "+ nextNode.key);
+							addToResultSet(nextNode,resultSet,branches_up,cntx.include);
+						}else{
+							out("continue");
+							buildResultSet(nextNode,resultSet,tokens,index,branches_up,cntx.check);
+						}
 					}
 				}
 				return;
@@ -246,33 +265,41 @@ public class JQLEngine {
 			if(next){
 				out("next");
 				index++;
-				if(node.element instanceof JsonQueryObject){
-					for (JsonQueryNode nextNode:node.each()){
-						nextNode.setAntenode(node);
+				int keyIndex = 0;
+				for (JsonQueryNode nextNode:node.each()){
+					if((Object)node instanceof JsonQueryArray){
+						nextNode.key = String.valueOf(keyIndex++);
+					}
+					nextNode.setAntenode(node);
+					if(checkNode(nextNode,tokens,branches_up,check)){
 						if(index == endOfPath){
 							out("adding from next: "+ branches_up);
-							addToResultSet(nextNode,resultSet,branches_up);
+							addToResultSet(nextNode,resultSet,branches_up,cntx.include);
 						}else{
-							buildResultSet(nextNode,resultSet,tokens,index,branches_up);
+							out("continue");
+							buildResultSet(nextNode,resultSet,tokens,index,branches_up,cntx.check);
 						}
 					}
 				}
+				
 				return;
 			}
 			if(child){
 				index++;
 				if(index<endOfPath&&!tokens.path[index].equals(EMPTY)&&!tokens.path[index].equals(EMPTY)){
 					out("child search:"+index);
-					keySearch(node,resultSet,tokens,index,branches_up);
+					keySearch(node,resultSet,tokens,index,branches_up,check);
 				}
 			}
 		}
 		
-		private void addToResultSet(JsonQueryNode node,JsonQueryArray resultSet,int branches_up){
-			for(int i = 0;i<branches_up;i++){
-				node=node.getAntenode();
+		private void addToResultSet(JsonQueryNode node,JsonQueryArray resultSet,int branches_up,boolean include){
+			if(include){
+				for(int i = 0;i<branches_up;i++){
+					node=node.getAntenode();
+				}
+				resultSet.add(node);
 			}
-			resultSet.add(node);
 		}
 		
 		private void keySearch(
@@ -280,26 +307,31 @@ public class JQLEngine {
 				JsonQueryArray resultSet,
 				JsonQueryTokens tokens,
 				int currentIndex,
-				int branches_up){
+				int branches_up,
+				boolean check){
 			
 			int endOfPath = tokens.path.length-branches_up;
 			String key = tokens.path[currentIndex];
 			if(node.element instanceof JsonQueryObject||node.element instanceof JsonQueryArray){
+				int keyIndex = 0;
 				for (JsonQueryNode nextNode:node.each()){
-					out(nextNode.key);
+					if((Object)node instanceof JsonQueryArray){
+						nextNode.key = String.valueOf(keyIndex++);
+					}
 					nextNode.setAntenode(node);
-					if(nextNode.key.equals(key)){
-						out("match found");
-						if(currentIndex+1 == endOfPath){
-							out(branches_up);
-							out("adding from keysearch");
-							addToResultSet(nextNode,resultSet,branches_up);
+					if(checkNode(nextNode,tokens,branches_up,check)){
+						if(nextNode.key.equals(key)){
+							out("match found");
+							if(currentIndex+1 == endOfPath){
+								out("adding from keysearch");
+								addToResultSet(nextNode,resultSet,branches_up,cntx.include);
+							}else{
+								out("continue looking");
+								buildResultSet(nextNode,resultSet,tokens,currentIndex+1,branches_up,cntx.check);
+							}
 						}else{
-							out("not the end");
-							buildResultSet(nextNode,resultSet,tokens,currentIndex+1,branches_up);
+							keySearch(nextNode,resultSet,tokens,currentIndex,branches_up,cntx.check);
 						}
-					}else{
-						keySearch(nextNode,resultSet,tokens,currentIndex,branches_up);
 					}
 				}
 			}
@@ -359,7 +391,6 @@ public class JQLEngine {
 			ArrayList<JsonQueryTokens> queryList = new ArrayList<JsonQueryTokens>();
 			String[] queries = queryString.split(QUERY_SEPARATOR);
 			for(String query:queries){
-				out("here");
 				JsonQueryTokens tokens = new JsonQueryTokens();
 				String[] paths = query.split(NOT_OPERATOR);
 				int j = 0;
@@ -391,5 +422,104 @@ public class JQLEngine {
 			}
 			return queryList;
 		}
-
+		public boolean checkNode(JsonQueryNode _node,JsonQueryTokens tokens,int branches_up, boolean check){
+			
+	
+			
+			boolean resume = true;
+			cntx.include = true;
+			cntx.check=check;
+			
+			if(check){
+				
+				out("checking node");
+				
+				JsonQueryNode node = _node;
+				ArrayList<String> array = new ArrayList<String>();
+				
+				cntx.include = true;
+				
+				for(String[] exceptions:tokens.exceptionPaths){
+					array.clear();
+					while(node.getAntenode()!=null){
+						array.add(node.key);
+						node=node.getAntenode();
+					}
+					Collections.reverse(array);
+					array.add(null);
+					for(int i = 0;i<branches_up;i++){
+						array.remove(0);
+					}
+					// debug
+					for(int i = 0;i<array.size();i++){
+						out2(array.get(i)+" ");
+					}
+					
+					int arrayIndex = 0;
+					int index;
+					for(index =0;index<exceptions.length;index++){
+						out("iterating exception:"+1+" execption-index: "+index+ " value:" + exceptions[index]+" against path vlaue:"+array.get(arrayIndex));
+						
+						if(exceptions[index].equals(ALL_OPERATOR)||exceptions[index].equals(EMPTY)){
+							if(array.get(arrayIndex)==null){
+								break;
+							}
+							
+						}else if(exceptions[index].equals(CHILD_OPERATOR)){
+							
+							// If its the last token, then cntx.match is true
+							// If it is followed by another token
+							if(index+1!=exceptions.length){
+								if(array.get(arrayIndex)==null){
+									break;
+								}else{
+									int newIndex = array.indexOf(exceptions[index+1]);
+									if(newIndex==-1){
+										out("did not found child");
+										break;
+									}else{
+										for(int j = arrayIndex;j<newIndex;j++){
+											array.set(j,null);
+										}
+										arrayIndex=newIndex;
+										out("found child at :" +arrayIndex);
+									}
+									index++;
+								}
+							}
+							break;
+						}else{
+							if(!exceptions[index].equals(array.get(arrayIndex))){
+								out("stop checking");
+								cntx.check = false;
+								break;
+							}
+						}
+						array.set(arrayIndex, null);
+						arrayIndex++;
+					}
+					if(index==exceptions.length){
+						cntx.include=false;
+					}
+					if(!cntx.include){
+						if(exceptions[index-1]==CHILD_OPERATOR){
+							out("stop iterating");
+							resume = false;
+						}else{
+							if(array.get(arrayIndex)!=null){
+								cntx.include=true;
+							}
+						}
+					}
+					if(!cntx.include){
+						out("exclude this node");
+						break;
+					}else{
+						out("include this node");
+					}
+				}
+				out("end check");
+			}
+			return resume;
+		}
 }

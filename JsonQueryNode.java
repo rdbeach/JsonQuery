@@ -131,9 +131,7 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 					nextNode = (JsonQueryNode) node._((String)keys[i]);
 				}
 				if(nextNode!=null&&addTreeInfo){
-					if(((Object)node.element instanceof JsonQueryObject)){
 						nextNode.key=(String)keys[i];
-					}
 					nextNode.antenode=node;
 				}
 				node=nextNode;
