@@ -3,7 +3,7 @@ import java.util.Iterator;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public interface JsonQuery {
+public abstract class JsonQuery {
 
 	public static final boolean ensureThreadSafety = true;
 	
@@ -15,6 +15,24 @@ public interface JsonQuery {
 			.registerTypeAdapter(JsonQueryNumber.class,
 					new JsonQueryNumberSerializer()).create();
 	public static final String EMPTY = "";
+	
+	public static final JsonQuery fromJson(String json){
+		Gson gson = new GsonBuilder().
+				disableHtmlEscaping().
+				registerTypeAdapter(JsonQueryNode.class, new JsonQueryDeserializer()).
+				registerTypeAdapter(JsonQueryNode.class, new JsonQuerySerializer()).
+				registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
+				serializeNulls().
+				create();
+		try{
+			return gson.fromJson(json,JsonQueryNode.class);
+		}catch(Throwable e){
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public abstract String getKey();
 
 	public abstract JsonQuery _(String key);
 

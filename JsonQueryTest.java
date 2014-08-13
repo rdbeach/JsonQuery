@@ -58,7 +58,7 @@ public class JsonQueryTest {
 			System.out.println(msg);
 			
 			// create JSON object
-			JsonQuery json = JsonQueryBuilder.fromJson(msg);
+			JsonQuery json = JsonQuery.fromJson(msg);
 			
 			// or recreate JSON string from JSON object using class method
 			out(json.toJson());
@@ -113,7 +113,7 @@ public class JsonQueryTest {
 			json.get("properties").remove("pets");
 			
 			// create a pets JSON object
-			JsonQuery pets = JsonQueryBuilder.fromJson(myPets);
+			JsonQuery pets = JsonQuery.fromJson(myPets);
 			
 			// add it
 			json.get("properties").set("pets",pets);

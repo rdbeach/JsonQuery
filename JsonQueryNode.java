@@ -8,7 +8,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LazilyParsedNumber;
 
 
-public class JsonQueryNode implements Iterable<Object>, JsonQuery{
+public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 	
 	private static final String PATH_DELIMETER = ".";
 	
@@ -19,7 +19,12 @@ public class JsonQueryNode implements Iterable<Object>, JsonQuery{
 	private static final String RIGHT_BRACKET_ESCAPE = "\\]";
 	private static final CharSequence LEFT_BRACKET = "[";
 	private static final CharSequence RIGHT_BRACKET = "]";
+	
 	public transient String key = EMPTY;
+	
+	public String getKey(){
+		return key;
+	}
 	
 	public Object element;
 	
