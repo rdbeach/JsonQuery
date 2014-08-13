@@ -58,7 +58,7 @@ public class JsonQueryTest {
 			System.out.println(msg);
 			
 			// create JSON object
-			JsonQueryNode json = JsonQueryNode.fromJson(msg);
+			JsonQuery json = JsonQueryBuilder.fromJson(msg);
 			
 			// or recreate JSON string from JSON object using class method
 			out(json.toJson());
@@ -80,7 +80,7 @@ public class JsonQueryTest {
 			out(json.get("address").toJson());
 			
 			// Update phone numbers
-			JsonQueryNode phoneNumbers = json.get("phoneNumbers");
+			JsonQuery phoneNumbers = json.get("phoneNumbers");
 			phoneNumbers.add(0,5555555);
 			phoneNumbers.remove(1);
 			
@@ -113,7 +113,7 @@ public class JsonQueryTest {
 			json.get("properties").remove("pets");
 			
 			// create a pets JSON object
-			JsonQuery pets = JsonQueryNode.fromJson(myPets);
+			JsonQuery pets = JsonQueryBuilder.fromJson(myPets);
 			
 			// add it
 			json.get("properties").set("pets",pets);

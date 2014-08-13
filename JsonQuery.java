@@ -24,6 +24,8 @@ public interface JsonQuery {
 
 	public abstract JsonQuery node(String path);
 
+	public abstract JsonQueryArray jql(String queryString);
+	
 	public abstract Object val();
 
 	public abstract String str();

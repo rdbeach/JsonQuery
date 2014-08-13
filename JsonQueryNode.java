@@ -33,22 +33,6 @@ public class JsonQueryNode implements Iterable<Object>, JsonQuery{
 		return this.antenode;
 	}
 	
-	public static final JsonQueryNode fromJson(String json){
-		Gson gson = new GsonBuilder().
-				disableHtmlEscaping().
-				registerTypeAdapter(JsonQueryNode.class, new JsonQueryDeserializer()).
-				registerTypeAdapter(JsonQueryNode.class, new JsonQuerySerializer()).
-				registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
-				serializeNulls().
-				create();
-		try{
-			return gson.fromJson(json,JsonQueryNode.class);
-		}catch(Throwable e){
-			e.printStackTrace();
-		}
-		return null;
-	}
-	
 	private transient Gson gson;
 	
 	private Gson getGson(){
