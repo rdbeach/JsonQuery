@@ -78,7 +78,7 @@ Start with a JSON string:
  
                 // create JsonQuery object 
                 
-                JsonQuery $ = JsonQueryBuilder.fromJson(msg);
+                JsonQuery $ = JsonQuery.fromJson(msg);
                 
                     
                 // or recreate JSON string from JsonQuery object using class method
@@ -189,7 +189,7 @@ Start with a JSON string:
 	   		}
 		*/
                 // create a pets JSON object
-                JsonQuery pets = JsonQueryBuilder.fromJson(myPets);
+                JsonQuery pets = JsonQuery.fromJson(myPets);
                 
                 // add it
                 $.get("properties").set("pets",pets);
@@ -220,7 +220,7 @@ Start with a JSON string:
                 
 Grab the "translatedText" value like this:
 
-                JsonQuery $ = JsonQueryBuilder.fromJson(msg);
+                JsonQuery $ = JsonQuery.fromJson(msg);
                 out($.get("data").get("translations").get(0).str("translatedText"));
                 
                 // Hello world
@@ -401,7 +401,7 @@ Grab the "translatedText" value like this:
 Brief description of the methods. Will make this more detailed later, as this code is still in development. Look at the java code for specifics.
 
                 Static Methods:
-                JsonQueryBuilder.fromJson: Converts a JSON string to a JsonQuery object tree
+                JsonQuery.fromJson: Converts a JSON string to a JsonQuery object tree
                 
                 
                 JsonQuery Class Members
@@ -427,6 +427,7 @@ Brief description of the methods. Will make this more detailed later, as this co
                 i: gets an integer node (type sensitive)
                 d: gets a double node (type sensitive)
                 l: gets a long node (type sensitive)
+                getKey: gets the key for current node
                 
                 
                 
