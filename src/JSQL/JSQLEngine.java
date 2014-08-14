@@ -44,6 +44,8 @@ public class JSQLEngine {
 	
 	private static final String[] SPECIAL_CHARS = {".", "*",":","!",",","'"};  // separator
 	
+	private static final String[] FORBIDDEN_SEQUENCES = {"::","**",":.",".:","!!",",,"};
+	
 	private static final String[] WHERECLAUSE_OPERATORS = {"=" ,"!=","<","<=",">",">="};
 	
 	private JQLContext cntx;
@@ -513,9 +515,9 @@ public class JSQLEngine {
 		}
 		
 		private HashMap<String,String> parseQueryString(String queryString){
-			
 			String[] tokens = queryString.trim().split(NOT_BACKSLASH+CLAUSE_DELIMETER+EMPTY);
 			if(tokens.length<2){
+				err("Jsql syntax error. Delimeter missing");
 				return null;
 			}
 			HashMap<String,String> tokenMap = new HashMap<String,String>();
@@ -528,6 +530,7 @@ public class JSQLEngine {
 						tokens[1].trim();
 					}
 					if(tokens.length!=2){
+						err("Jsql syntax error. Invalid limit Clause");
 						return null;
 					}
 					out("parseQuery: " +KEYWORDS[precedence]+" "+tokens[1]);
@@ -539,6 +542,7 @@ public class JSQLEngine {
 					for (String kw : KEYWORDS) {
 					    if (keyword.equalsIgnoreCase(kw)) {
 					        if(precedence > count){
+					        	err("Jsql syntax error. Keywords out of order.");
 					        	return null;
 					        }
 					        precedence=count;
@@ -547,7 +551,12 @@ public class JSQLEngine {
 					    }
 					    count++;
 					}
-					if (!found||i+1>=tokens.length) {
+					if (!found) {
+						err("Jsql syntax error. Delimeter missing or invalid Keyword: "+ keyword);
+						return null;
+					}
+					if(i+1>=tokens.length){
+						err("Jsql syntax error. Delimeter missing.");
 						return null;
 					}
 					if(keyword.equalsIgnoreCase(SELECT))selectFound=true;
@@ -556,6 +565,7 @@ public class JSQLEngine {
 				}
 			}
 			if(!selectFound){
+				err("Jsql syntax error. Keyword Select missing.");
 				return null;
 			}
 			return tokenMap;
@@ -564,6 +574,14 @@ public class JSQLEngine {
 		private ArrayList<JSQLTokens> getTokens(String queryString){
 			out("start getTokens");
 			ArrayList<JSQLTokens> queryList = new ArrayList<JSQLTokens>();
+			
+			for(int i = 0;i<FORBIDDEN_SEQUENCES.length;i++){
+				if(queryString.contains(FORBIDDEN_SEQUENCES[i])){
+					err("Jsql syntax error. Forbidden sequence: " + FORBIDDEN_SEQUENCES[i] + ".");
+					return queryList;
+				}
+			}
+			
 			String[] queries = queryString.split(QUERY_SEPARATOR);
 			for(String query:queries){
 				JSQLTokens tokens = new JSQLTokens();
@@ -577,12 +595,6 @@ public class JSQLEngine {
 							replaceAll(NOT_BACKSLASH+RIGHT_BRACKET_ESCAPE,EMPTY);
 					if(path.startsWith(PATH_DELIMETER+CHILD_OPERATOR))path = path.substring(1);
 					if(path.endsWith(CHILD_OPERATOR+PATH_DELIMETER))path = path.substring(0,path.length()-1);
-					
-					/*
-					 *  Forbidden sequences
-					 *  
-					 *  
-					 */
 					
 					
 					String[] keys = path.split(NOT_BACKSLASH+PATH_DELIMETER_REGEX,-1);
@@ -613,11 +625,16 @@ public class JSQLEngine {
 			e.printStackTrace();
 		}
 		
-		//TODO delete
-		private void out(Object msg){
+		private void err(Object msg){
 			System.out.println(msg);
 		}
+		
+		//TODO delete
+		private void out(Object msg){
+			//System.out.println(msg);
+		}
+		
 		private void out2(Object msg){
-			System.out.print(msg);
+			//System.out.print(msg);
 		}
 }
