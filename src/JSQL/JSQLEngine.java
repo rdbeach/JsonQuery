@@ -52,14 +52,6 @@ public class JSQLEngine {
 		this.cntx = new JQLContext();
 	}
 	
-	//TODO delete
-	private void out(Object msg){
-		System.out.println(msg);
-	}
-	private void out2(Object msg){
-		System.out.print(msg);
-	}
-	
 	public static final JSQLEngine getJQL(){
 		return new JSQLEngine();
 	}
@@ -80,11 +72,11 @@ public class JSQLEngine {
 			out("FROM clause");
 			
 			JSQLResultSet<JSQLNode> fromResultSet = new JSQLResultSet<JSQLNode>();
+			node.setKey(ROOT_KEY);
 			
 			String fromClause=ALL_OPERATOR;
 			if(clauses.containsKey(FROM))fromClause=clauses.get(FROM);
 			if(fromClause.equals(ALL_OPERATOR)){
-				node.setKey(ROOT_KEY);
 				fromResultSet.add(node);
 			}else{
 				ArrayList<JSQLTokens> queries = getTokens(fromClause);
@@ -294,12 +286,18 @@ public class JSQLEngine {
 			if(child){
 				index++;
 				if(index<endOfPath){
-					if(!tokens.path[index].equals(CHILD_OPERATOR)&&!tokens.path[index].equals(ALL_OPERATOR)&&!tokens.path[index].equals(EMPTY)){
+					if(!tokens.path[index].equals(ALL_OPERATOR)){
 						out("build result: child search:"+index);
 						keySearch(node,resultSet,tokens,index,branches_up,check);
+					}else{
+						returnAll(node,resultSet,tokens,index,branches_up,check);
 					}
 				}else{
-					returnAll(node,resultSet,tokens,index,branches_up,check);
+					if(checkNode(node,tokens,branches_up,check)){
+						out("build result: adding from retern all + node");
+						addToResultSet(node,resultSet,branches_up,cntx.include);
+						returnAll(node,resultSet,tokens,index,branches_up,cntx.check);
+					}
 				}
 			}
 		}
@@ -311,6 +309,30 @@ public class JSQLEngine {
 				}
 				resultSet.add(node);
 			}
+		}
+		
+		private JSQLNode path(JSQLNode node, Object[] keys, boolean addTreeInfo){
+			try{
+				int i=0;
+				for(i=0;i<keys.length;i++){
+					JSQLNode nextNode=null;
+					if(JSQLUtil.isInteger((String)keys[i])){
+						nextNode = (JSQLNode) node.getNextNode(Integer.parseInt((String)keys[i]));
+					}else{
+						nextNode = (JSQLNode) node.getNextNode((String)keys[i]);
+					}
+					if(nextNode!=null&&addTreeInfo){
+							nextNode.setKey((String)keys[i]);
+						nextNode.setAntenode(node);
+					}
+					node=nextNode;
+					if(node==null)break;
+				}
+				if(node!=null)return node;
+			}catch(Throwable e){
+				handleException(e);
+			}
+			return node.createNewNode(null,null);
 		}
 		
 		private void keySearch(
@@ -378,101 +400,6 @@ public class JSQLEngine {
 			}
 		}
 		
-		private HashMap<String,String> parseQueryString(String queryString){
-			
-			String[] tokens = queryString.trim().split(NOT_BACKSLASH+CLAUSE_DELIMETER+EMPTY);
-			if(tokens.length<2){
-				return null;
-			}
-			HashMap<String,String> tokenMap = new HashMap<String,String>();
-			int precedence=0;
-			boolean selectFound=false;
-			for(int i = 0;i<tokens.length;i+=2){
-				if(tokens[i].trim().toLowerCase().startsWith(LIMIT)){
-					tokens = tokens[i].split(SPACE);
-					if(tokens.length>1){
-						tokens[1].trim();
-					}
-					if(tokens.length!=2){
-						return null;
-					}
-					out("parseQuery: " +KEYWORDS[precedence]+" "+tokens[1]);
-					tokenMap.put(LIMIT,tokens[1]);
-				}else{
-					String keyword = tokens[i].trim();
-					boolean found = false;
-					int count = 0;
-					for (String kw : KEYWORDS) {
-					    if (keyword.equalsIgnoreCase(kw)) {
-					        if(precedence > count){
-					        	return null;
-					        }
-					        precedence=count;
-					        found = true;
-					        break;
-					    }
-					    count++;
-					}
-					if (!found||i+1>=tokens.length) {
-						return null;
-					}
-					if(keyword.equalsIgnoreCase(SELECT))selectFound=true;
-					out("parseQuery: " +KEYWORDS[precedence]+" "+tokens[i+1]);
-					tokenMap.put(KEYWORDS[precedence],tokens[i+1]);
-				}
-			}
-			if(!selectFound){
-				return null;
-			}
-			return tokenMap;
-		}
-		
-		private ArrayList<JSQLTokens> getTokens(String queryString){
-			out("start getTokens");
-			ArrayList<JSQLTokens> queryList = new ArrayList<JSQLTokens>();
-			String[] queries = queryString.split(QUERY_SEPARATOR);
-			for(String query:queries){
-				JSQLTokens tokens = new JSQLTokens();
-				String[] paths = query.split(NOT_OPERATOR);
-				int j = 0;
-				for(String path:paths){
-					out("getTokens: path:" +path);
-					path = path.
-							replaceAll(NOT_BACKSLASH+CHILD_OPERATOR,PATH_DELIMETER+CHILD_OPERATOR+PATH_DELIMETER).
-							replaceAll(NOT_BACKSLASH+LEFT_BRACKET_ESCAPE,PATH_DELIMETER).
-							replaceAll(NOT_BACKSLASH+RIGHT_BRACKET_ESCAPE,EMPTY);
-					if(path.startsWith(PATH_DELIMETER+CHILD_OPERATOR))path = path.substring(1);
-					if(path.endsWith(CHILD_OPERATOR+PATH_DELIMETER))path = path.substring(0,path.length()-1);
-					
-					/*
-					 *  Forbidden sequences
-					 *  
-					 *  
-					 */
-					
-					
-					String[] keys = path.split(NOT_BACKSLASH+PATH_DELIMETER_REGEX,-1);
-					int k = 0;
-					for(String key:keys){
-						out("getTokens: key:" +key);
-						for(int count=0;count<SPECIAL_CHARS.length;count++){
-							key=key.replace(DOUBLE_BACKSLASH+SPECIAL_CHARS[count], SPECIAL_CHARS[count]); // path
-						}
-						keys[k]=key;
-						k++;
-					}
-					if(j==0){
-						tokens.path=keys;
-					}else{
-						if(tokens.exceptionPaths==null)tokens.exceptionPaths = new ArrayList<String[]>();
-						tokens.exceptionPaths.add(keys);
-					}
-					j++;
-				}
-				queryList.add(tokens);
-			}
-			return queryList;
-		}
 		private boolean checkNode(JSQLNode _node,JSQLTokens tokens,int branches_up, boolean check){
 			
 			boolean resume = true;
@@ -585,32 +512,112 @@ public class JSQLEngine {
 			return resume;
 		}
 		
-		private JSQLNode path(JSQLNode node, Object[] keys, boolean addTreeInfo){
-			try{
-				int i=0;
-				for(i=0;i<keys.length;i++){
-					JSQLNode nextNode=null;
-					if(JSQLUtil.isInteger((String)keys[i])){
-						nextNode = (JSQLNode) node.getNextNode(Integer.parseInt((String)keys[i]));
-					}else{
-						nextNode = (JSQLNode) node.getNextNode((String)keys[i]);
-					}
-					if(nextNode!=null&&addTreeInfo){
-							nextNode.setKey((String)keys[i]);
-						nextNode.setAntenode(node);
-					}
-					node=nextNode;
-					if(node==null)break;
-				}
-				if(node!=null)return node;
-			}catch(Throwable e){
-				handleException(e);
+		private HashMap<String,String> parseQueryString(String queryString){
+			
+			String[] tokens = queryString.trim().split(NOT_BACKSLASH+CLAUSE_DELIMETER+EMPTY);
+			if(tokens.length<2){
+				return null;
 			}
-			return node.createNewNode(null,null);
+			HashMap<String,String> tokenMap = new HashMap<String,String>();
+			int precedence=0;
+			boolean selectFound=false;
+			for(int i = 0;i<tokens.length;i+=2){
+				if(tokens[i].trim().toLowerCase().startsWith(LIMIT)){
+					tokens = tokens[i].split(SPACE);
+					if(tokens.length>1){
+						tokens[1].trim();
+					}
+					if(tokens.length!=2){
+						return null;
+					}
+					out("parseQuery: " +KEYWORDS[precedence]+" "+tokens[1]);
+					tokenMap.put(LIMIT,tokens[1]);
+				}else{
+					String keyword = tokens[i].trim();
+					boolean found = false;
+					int count = 0;
+					for (String kw : KEYWORDS) {
+					    if (keyword.equalsIgnoreCase(kw)) {
+					        if(precedence > count){
+					        	return null;
+					        }
+					        precedence=count;
+					        found = true;
+					        break;
+					    }
+					    count++;
+					}
+					if (!found||i+1>=tokens.length) {
+						return null;
+					}
+					if(keyword.equalsIgnoreCase(SELECT))selectFound=true;
+					out("parseQuery: " +KEYWORDS[precedence]+" "+tokens[i+1]);
+					tokenMap.put(KEYWORDS[precedence],tokens[i+1]);
+				}
+			}
+			if(!selectFound){
+				return null;
+			}
+			return tokenMap;
+		}
+		
+		private ArrayList<JSQLTokens> getTokens(String queryString){
+			out("start getTokens");
+			ArrayList<JSQLTokens> queryList = new ArrayList<JSQLTokens>();
+			String[] queries = queryString.split(QUERY_SEPARATOR);
+			for(String query:queries){
+				JSQLTokens tokens = new JSQLTokens();
+				String[] paths = query.split(NOT_OPERATOR);
+				int j = 0;
+				for(String path:paths){
+					out("getTokens: path:" +path);
+					path = path.
+							replaceAll(NOT_BACKSLASH+CHILD_OPERATOR,PATH_DELIMETER+CHILD_OPERATOR+PATH_DELIMETER).
+							replaceAll(NOT_BACKSLASH+LEFT_BRACKET_ESCAPE,PATH_DELIMETER).
+							replaceAll(NOT_BACKSLASH+RIGHT_BRACKET_ESCAPE,EMPTY);
+					if(path.startsWith(PATH_DELIMETER+CHILD_OPERATOR))path = path.substring(1);
+					if(path.endsWith(CHILD_OPERATOR+PATH_DELIMETER))path = path.substring(0,path.length()-1);
+					
+					/*
+					 *  Forbidden sequences
+					 *  
+					 *  
+					 */
+					
+					
+					String[] keys = path.split(NOT_BACKSLASH+PATH_DELIMETER_REGEX,-1);
+					int k = 0;
+					for(String key:keys){
+						out("getTokens: key:" +key);
+						for(int count=0;count<SPECIAL_CHARS.length;count++){
+							key=key.replace(DOUBLE_BACKSLASH+SPECIAL_CHARS[count], SPECIAL_CHARS[count]); // path
+						}
+						keys[k]=key;
+						k++;
+					}
+					if(j==0){
+						tokens.path=keys;
+					}else{
+						if(tokens.exceptionPaths==null)tokens.exceptionPaths = new ArrayList<String[]>();
+						tokens.exceptionPaths.add(keys);
+					}
+					j++;
+				}
+				queryList.add(tokens);
+			}
+			return queryList;
 		}
 		
 		private void handleException(Throwable e){
 			System.out.println("error");
 			e.printStackTrace();
+		}
+		
+		//TODO delete
+		private void out(Object msg){
+			System.out.println(msg);
+		}
+		private void out2(Object msg){
+			System.out.print(msg);
 		}
 }
