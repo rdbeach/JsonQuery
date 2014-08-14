@@ -1,17 +1,21 @@
 package src;
 
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import src.JSQL.JQLEngine;
+import src.JSQL.JSQLEngine;
+import src.JSQL.JSQLNode;
+import src.JSQL.JSQLResultSet;
+import src.JSQL.JSQLUtil;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LazilyParsedNumber;
 
 
-public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
+public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	
 	private static final String PATH_DELIMETER = ".";
 	
@@ -25,16 +29,25 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 	
 	public transient String key = EMPTY;
 	
+	@Override
 	public String getKey(){
 		return key;
+	}
+	
+	@Override
+	public void setKey(String key) {
+		// TODO Auto-generated method stub
+		this.key = key;
 	}
 	
 	public Object element;
 	
 	private transient JsonQueryNode antenode;
 	
-	public void setAntenode(JsonQueryNode node){
-		this.antenode=node;
+	@Override
+	public void setAntenode(JSQLNode antenode) {
+		// TODO Auto-generated method stub
+		this.antenode = (JsonQueryNode)antenode;
 	}
 	
 	public JsonQueryNode getAntenode(){
@@ -48,7 +61,7 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 					disableHtmlEscaping().
 					registerTypeAdapter(JsonQueryNode.class, new JsonQueryDeserializer()).
 					registerTypeAdapter(JsonQueryNode.class, new JsonQuerySerializer()).
-					registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
+					registerTypeAdapter(JSONQueryNumber.class, new JsonQueryNumberSerializer()).
 					serializeNulls().
 					create():static_gson));
 		return gson;
@@ -62,9 +75,14 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 		this.element = node;
 	}
 	
-	public JsonQueryNode(Object node, String key){
-		this.element = node;
+	public JsonQueryNode(Object element, String key){
+		this.element = element;
 		this.key = key;
+	}
+	
+	@Override
+	public JsonQueryNode createNewNode(Object element, String key){
+		return new JsonQueryNode(element,key);
 	}
 	
 	// Single node tree traversal operator
@@ -85,14 +103,24 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 	 * @see JsonQuery#_(int)
 	 */
 	@Override
-	public JsonQuery _(int key){
+	public JsonQueryNode _(int key){
 		if(element instanceof JsonQueryArray){
 			if(key<((JsonQueryArray)element).size()){
-				JsonQuery node = (JsonQuery)((JsonQueryArray)element).get(key);
+				JsonQueryNode node = (JsonQueryNode)((JsonQueryArray)element).get(key);
 				if(node!=null)return node;
 			}
 		}
 		return new JsonQueryNode(null,null);
+	}
+	
+	@Override
+	public JsonQueryNode getNextNode(String key) {
+		return _(key);
+	}
+	
+	@Override
+	public JsonQueryNode getNextNode(int key) {
+		return _(key);
 	}
 	
 	// Multinode: tree traversal operator
@@ -123,12 +151,12 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 		return keys;
 	}
 	
-	public JsonQueryNode path(JsonQueryNode node, Object[] keys, boolean addTreeInfo){
+	private JsonQueryNode path(JsonQueryNode node, Object[] keys, boolean addTreeInfo){
 		try{
 			int i=0;
 			for(i=0;i<keys.length;i++){
 				JsonQueryNode nextNode=null;
-				if(JsonQueryUtil.isInteger((String)keys[i])){
+				if(JSQLUtil.isInteger((String)keys[i])){
 					nextNode = (JsonQueryNode) node._(Integer.parseInt((String)keys[i]));
 				}else{
 					nextNode = (JsonQueryNode) node._((String)keys[i]);
@@ -159,7 +187,7 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 		try{
 			int i=0;
 			for(i=0;i<keys.length;i++){
-				if(JsonQueryUtil.isInteger(keys[i])){
+				if(JSQLUtil.isInteger(keys[i])){
 					int index = Integer.parseInt(keys[i]);
 					JsonQueryNode nextNode = (JsonQueryNode) node._(index);
 					if(!nextNode.exists()){
@@ -177,7 +205,7 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 						nextNode.key=EMPTY;
 						array.set(index,nextNode);
 						if(i+1<keys.length){
-							if(JsonQueryUtil.isInteger(keys[i+1])){
+							if(JSQLUtil.isInteger(keys[i+1])){
 								nextNode.element=new JsonQueryArray();
 							}else{
 								nextNode.element=new JsonQueryObject();
@@ -198,7 +226,7 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 						}
 						((JsonQueryObject) node.element).put(keys[i],nextNode);
 						if(i+1<keys.length){
-							if(JsonQueryUtil.isInteger(keys[i+1])){
+							if(JSQLUtil.isInteger(keys[i+1])){
 								nextNode.element=new JsonQueryArray();
 							}else{
 								nextNode.element=new JsonQueryObject();
@@ -217,8 +245,11 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 	
 	// JQL - JSON QUERY LANGUAGE
 	
-	public JsonQueryArray jql(String queryString){
-	  return JQLEngine.getJQL().execute(this,queryString);
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public JSQLResultSet<JsonQuery> jsql(String queryString){
+	 return (JSQLResultSet)JSQLEngine.getJQL().execute(this,queryString);
+	 
 	}
 	
 	// Multinode gets
@@ -228,6 +259,11 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 	 */
 	@Override
 	public Object val() {
+			return element;
+	}
+	
+	@Override
+	public Object getElement() {
 			return element;
 	}
 	
@@ -687,6 +723,25 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 		}
 		return new JsonQueryArray();
 	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public ArrayList<Object> getChildNodes() {
+		if(element instanceof JsonQueryArray){
+			return (ArrayList<Object>) element;
+		}
+		if(element instanceof JsonQueryObject){
+			ArrayList<Object>  array = new ArrayList<Object>();
+			for (Entry<String, JsonQueryNode> entry : ((JsonQueryObject)element).entrySet()) {
+			    String key = entry.getKey();
+			    Object value = entry.getValue();
+			    JsonQueryNode node = new JsonQueryNode(((JsonQueryNode)value).element,key);
+			    array.add(node);
+			}
+			return array;
+		}
+		return new ArrayList<Object>();
+	}
 
 	/* (non-Javadoc)
 	 * @see JsonQuery#iterator()
@@ -732,7 +787,7 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 			return "array";
 		}else if(element instanceof String){
 			return "string";
-		}else if(element instanceof JsonQueryNumber){
+		}else if(element instanceof JSONQueryNumber){
 			return "number";
 		}else if(element instanceof Boolean){
 			return "boolean";
@@ -753,7 +808,7 @@ public class JsonQueryNode extends JsonQuery implements Iterable<Object> {
 	
 	private  Object formatValue(Object value){
 		if(value instanceof Number){
-			value = new JsonQueryNumber(new LazilyParsedNumber(value.toString()));
+			value = new JSONQueryNumber(new LazilyParsedNumber(value.toString()));
 		}
 		return  value;
 	}

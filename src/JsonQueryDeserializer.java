@@ -42,7 +42,7 @@ public class JsonQueryDeserializer implements JsonDeserializer<JsonQueryNode> {
 	  		if(elem.getAsJsonPrimitive().isString()){
 					return new JsonQueryNode(elem.getAsJsonPrimitive().getAsString());
 	  		}else if(elem.getAsJsonPrimitive().isNumber()){
-	  			   return new JsonQueryNode(new JsonQueryNumber(elem.getAsJsonPrimitive().getAsNumber()));
+	  			   return new JsonQueryNode(new JSONQueryNumber(elem.getAsJsonPrimitive().getAsNumber()));
 	  		}else if(elem.getAsJsonPrimitive().isBoolean()){
 		    	   return new JsonQueryNode((Boolean)elem.getAsJsonPrimitive().getAsBoolean());
 	  		}

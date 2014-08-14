@@ -3,9 +3,10 @@ import java.util.ArrayList;
 
 import com.google.gson.Gson;
 
+import src.JSQL.JSQLArray;
 
 
-public class JsonQueryArray extends ArrayList<JsonQueryNode>{
+public class JsonQueryArray extends ArrayList<JsonQueryNode> implements JSQLArray{
 
 	/**
 	 * 

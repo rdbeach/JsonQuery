@@ -1,12 +1,12 @@
 package src;
-//import com.google.gson.internal.LazilyParsedNumber;
 
+import src.JSQL.JSQLNumber;
 
 @SuppressWarnings("serial")
-public class JsonQueryNumber extends Number{
+public class JSONQueryNumber extends Number implements JSQLNumber{
 	
 	private transient Number n;
-    public JsonQueryNumber(Number n){
+    public JSONQueryNumber(Number n){
     	this.n = n;
     }
     

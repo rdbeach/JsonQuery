@@ -1,6 +1,8 @@
 package src;
 import java.util.Iterator;
 
+import src.JSQL.JSQLResultSet;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -13,7 +15,7 @@ public abstract class JsonQuery {
 			.registerTypeAdapter(JsonQueryNode.class, new JsonQueryDeserializer())
 			.serializeNulls()
 			.registerTypeAdapter(JsonQueryNode.class, new JsonQuerySerializer())
-			.registerTypeAdapter(JsonQueryNumber.class,
+			.registerTypeAdapter(JSONQueryNumber.class,
 					new JsonQueryNumberSerializer()).create();
 	public static final String EMPTY = "";
 	
@@ -22,7 +24,7 @@ public abstract class JsonQuery {
 				disableHtmlEscaping().
 				registerTypeAdapter(JsonQueryNode.class, new JsonQueryDeserializer()).
 				registerTypeAdapter(JsonQueryNode.class, new JsonQuerySerializer()).
-				registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
+				registerTypeAdapter(JSONQueryNumber.class, new JsonQueryNumberSerializer()).
 				serializeNulls().
 				create();
 		try{
@@ -43,7 +45,7 @@ public abstract class JsonQuery {
 
 	public abstract JsonQuery node(String path);
 
-	public abstract JsonQueryArray jql(String queryString);
+	public abstract JSQLResultSet<JsonQuery> jsql(String queryString);
 	
 	public abstract Object val();
 

@@ -5,14 +5,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import src.JsonQueryArray;
-import src.JsonQueryNode;
-import src.JsonQueryNumber;
-import src.JsonQueryObject;
-import src.JsonQueryTokens;
+
+//import src.JsonQueryUtil;
+
+//import src.JsonQueryObject;
 
 
-public class JQLEngine {
+public class JSQLEngine {
 	
 	private static final String[] KEYWORDS = {"select",
 		"from",
@@ -47,9 +46,9 @@ public class JQLEngine {
 	
 	private static final String[] WHERECLAUSE_OPERATORS = {"=" ,"!=","<","<=",">",">="};
 	
-	public JQLContext cntx;
+	private JQLContext cntx;
 	
-	public JQLEngine(){
+	private JSQLEngine(){
 		this.cntx = new JQLContext();
 	}
 	
@@ -61,34 +60,34 @@ public class JQLEngine {
 		System.out.print(msg);
 	}
 	
-	public static final JQLEngine getJQL(){
-		return new JQLEngine();
+	public static final JSQLEngine getJQL(){
+		return new JSQLEngine();
 	}
 	
-	public class JQLContext{
+	private class JQLContext{
 		public boolean include=true;
 		public boolean check=true;
 	}
 	
-	public JsonQueryArray execute(JsonQueryNode node,String queryString){
+	public JSQLResultSet<JSQLNode> execute(JSQLNode node,String queryString){
 		HashMap<String,String> clauses = parseQueryString(queryString);
-		if(clauses==null)return new JsonQueryArray();
+		if(clauses==null)return new JSQLResultSet<JSQLNode>();
 		return executeJQL(node, clauses);
 	}
 	
-	public JsonQueryArray executeJQL(JsonQueryNode node, HashMap<String,String> clauses){
+	private JSQLResultSet<JSQLNode> executeJQL(JSQLNode node, HashMap<String,String> clauses){
 			
 			out("FROM clause");
 			
-			JsonQueryArray fromResultSet = new JsonQueryArray();
+			JSQLResultSet<JSQLNode> fromResultSet = new JSQLResultSet<JSQLNode>();
 			
 			String fromClause=ALL_OPERATOR;
 			if(clauses.containsKey(FROM))fromClause=clauses.get(FROM);
 			if(fromClause.equals(ALL_OPERATOR)){
-				node.key=ROOT_KEY;
+				node.setKey(ROOT_KEY);
 				fromResultSet.add(node);
 			}else{
-				ArrayList<JsonQueryTokens> queries = getTokens(fromClause);
+				ArrayList<JSQLTokens> queries = getTokens(fromClause);
 				executeJQLClause(node,fromResultSet,queries);
 			}
 			
@@ -101,28 +100,28 @@ public class JQLEngine {
 			
 			out("SELECT clause");
 			
-			JsonQueryArray selectResultSet = new JsonQueryArray();
+			JSQLResultSet<JSQLNode> selectResultSet = new JSQLResultSet<JSQLNode>();
 			
 			if(clauses.containsKey(SELECT)){
 				String selectClause=clauses.get(SELECT);
 				if(selectClause.equals(ALL_OPERATOR)){
 					selectResultSet=fromResultSet;
 				}else{
-					ArrayList<JsonQueryTokens> queries = getTokens(selectClause);
-					for(JsonQueryNode subNode: fromResultSet){
+					ArrayList<JSQLTokens> queries = getTokens(selectClause);
+					for(JSQLNode subNode: (JSQLResultSet<JSQLNode>)fromResultSet){
 							executeJQLClause(subNode,selectResultSet,queries);
 					}
 				}
 			}
-			
+			out("finished");
 			return selectResultSet;
 		}
 		
-		private void executeJQLClause(JsonQueryNode node, 
-				JsonQueryArray resultSet,
-				ArrayList<JsonQueryTokens> queries
+		private void executeJQLClause(JSQLNode node, 
+				JSQLResultSet<JSQLNode> resultSet,
+				ArrayList<JSQLTokens> queries
 				){
-			for(JsonQueryTokens tokens:queries){
+			for(JSQLTokens tokens:queries){
 				int branches_up=0;
 				int i = tokens.path.length-1;
 				while(i>0&&(tokens.path[i].equals(EMPTY))){
@@ -133,7 +132,7 @@ public class JQLEngine {
 			}
 		}
 		
-		private void executeWhereClause(JsonQueryArray array,String whereClause){
+		private void executeWhereClause(JSQLResultSet<JSQLNode> array,String whereClause){
 			
 			int operator_array_index=0;
 			int operator_index=-1;
@@ -163,17 +162,17 @@ public class JQLEngine {
 				
 				out("where clause op1:"+operands[0]);
 				out("where clause op2:"+operands[1]);
-				Iterator<JsonQueryNode> iterator = array.iterator();
+				Iterator<JSQLNode> iterator = ((JSQLResultSet<JSQLNode>)array).iterator();
 				while (iterator.hasNext()) {
-				   JsonQueryNode node = iterator.next();
+				   JSQLNode node = iterator.next();
 					boolean pass = false;
-					for(JsonQueryNode subNode:node.jql("Select '*' From '"+operands[0]+"'")){
-					    Object val = subNode.val();
+					for(JSQLNode subNode:(JSQLResultSet<JSQLNode>)execute(node,"Select '*' From '"+operands[0]+"'")){
+					    Object val = ((JSQLNode)subNode).getElement();
 						switch (operator_array_index){
 							case 0: // equals
 								out("=: "+ val + " " +operands[1]);
-								if(val instanceof JsonQueryNumber){
-									if(((JsonQueryNumber)val).doubleValue()==Double.valueOf(operands[1]))pass=true;
+								if(val instanceof JSQLNumber){
+									if(((JSQLNumber)val).doubleValue()==Double.valueOf(operands[1]))pass=true;
 								}else if(val instanceof Boolean){
 									if((Boolean)val.equals(Boolean.valueOf(operands[1])))pass=true;
 								}else if(val instanceof String){
@@ -182,8 +181,8 @@ public class JQLEngine {
 								break;
 							case 1: // not equals
 								out("!=: "+ val + " " +operands[1]);
-								if(val instanceof JsonQueryNumber){
-									if(((JsonQueryNumber)val).doubleValue()!=Double.valueOf(operands[1]))pass=true;
+								if(val instanceof JSQLNumber){
+									if(((JSQLNumber)val).doubleValue()!=Double.valueOf(operands[1]))pass=true;
 								}else if(val instanceof Boolean){
 									if(!(Boolean)val.equals(Boolean.valueOf(operands[1])))pass=true;
 								}else if(val instanceof String){
@@ -192,26 +191,26 @@ public class JQLEngine {
 								break;
 							case 2: // less than
 								out("<: "+ val + " " +operands[1]);
-								if(val instanceof JsonQueryNumber){
-									if(((JsonQueryNumber)val).doubleValue()<Double.valueOf(operands[1]))pass=true;
+								if(val instanceof JSQLNumber){
+									if(((JSQLNumber)val).doubleValue()<Double.valueOf(operands[1]))pass=true;
 								}
 								break;
 							case 3: // less than equal
 								out("<=: "+ val + " " +operands[1]);
-								if(val instanceof JsonQueryNumber){
-									if(((JsonQueryNumber)val).doubleValue()<=Double.valueOf(operands[1]))pass=true;
+								if(val instanceof JSQLNumber){
+									if(((JSQLNumber)val).doubleValue()<=Double.valueOf(operands[1]))pass=true;
 								}
 								break;
 							case 4: // greater than
 								out(">: "+ val + " " +operands[1]);
-								if(val instanceof JsonQueryNumber){
-									if(((JsonQueryNumber)val).doubleValue()>Double.valueOf(operands[1]))pass=true;
+								if(val instanceof JSQLNumber){
+									if(((JSQLNumber)val).doubleValue()>Double.valueOf(operands[1]))pass=true;
 								}
 								break;
 							case 5: // greater than equal
 								out(">=: "+ val + " " +operands[1]);
-								if(val instanceof JsonQueryNumber){
-									if(((JsonQueryNumber)val).doubleValue()>=Double.valueOf(operands[1]))pass=true;
+								if(val instanceof JSQLNumber){
+									if(((JSQLNumber)val).doubleValue()>=Double.valueOf(operands[1]))pass=true;
 								}
 								break;
 							
@@ -229,9 +228,9 @@ public class JQLEngine {
 		}
 		
 		private void buildResultSet(
-				JsonQueryNode node,
-				JsonQueryArray resultSet,
-				JsonQueryTokens tokens,
+				JSQLNode node,
+				JSQLResultSet<JSQLNode> resultSet,
+				JSQLTokens tokens,
 				int currentIndex,
 				int branches_up,
 				boolean check){
@@ -255,11 +254,11 @@ public class JQLEngine {
 			}
 			if(!searchPath.isEmpty()){
 				out("build result: grabing path");
-				JsonQueryNode nextNode = node.path(node,searchPath.toArray(),true);
+				JSQLNode nextNode = path(node,searchPath.toArray(),true);
 				if(checkNode(nextNode,tokens,branches_up,check)){
-					if(nextNode.element!=null){
+					if(nextNode.getElement()!=null){
 						if(index == endOfPath){
-							out("build result: adding from path: "+ nextNode.key);
+							out("build result: adding from path: "+ nextNode.getKey());
 							addToResultSet(nextNode,resultSet,branches_up,cntx.include);
 						}else{
 							out("build result: continue");
@@ -273,9 +272,10 @@ public class JQLEngine {
 				out("build result: next");
 				index++;
 				int keyIndex = 0;
-				for (JsonQueryNode nextNode:node.each()){
-					if((Object)node instanceof JsonQueryArray){
-						nextNode.key = String.valueOf(keyIndex++);
+				for (Object objNode:node.getChildNodes()){
+					JSQLNode nextNode = (JSQLNode)objNode;
+					if(node instanceof JSQLArray){
+						nextNode.setKey(String.valueOf(keyIndex++));
 					}
 					nextNode.setAntenode(node);
 					if(checkNode(nextNode,tokens,branches_up,check)){
@@ -304,7 +304,7 @@ public class JQLEngine {
 			}
 		}
 		
-		private void addToResultSet(JsonQueryNode node,JsonQueryArray resultSet,int branches_up,boolean include){
+		private void addToResultSet(JSQLNode node,JSQLResultSet<JSQLNode> resultSet,int branches_up,boolean include){
 			if(include){
 				for(int i = 0;i<branches_up;i++){
 					node=node.getAntenode();
@@ -314,24 +314,28 @@ public class JQLEngine {
 		}
 		
 		private void keySearch(
-				JsonQueryNode node,
-				JsonQueryArray resultSet,
-				JsonQueryTokens tokens,
+				JSQLNode node,
+				JSQLResultSet<JSQLNode> resultSet,
+				JSQLTokens tokens,
 				int currentIndex,
 				int branches_up,
 				boolean check){
 			
 			int endOfPath = tokens.path.length-branches_up;
 			String key = tokens.path[currentIndex];
-			if(node.element instanceof JsonQueryObject||node.element instanceof JsonQueryArray){
+
+			if(node.getElement() instanceof JSQLObject||node.getElement() instanceof JSQLArray){
 				int keyIndex = 0;
-				for (JsonQueryNode nextNode:node.each()){
-					if((Object)node instanceof JsonQueryArray){
-						nextNode.key = String.valueOf(keyIndex++);
+				out("instance of array: " +(node.getElement() instanceof JSQLArray));
+				for (Object objNode:node.getChildNodes()){
+					out("iterating");
+					JSQLNode nextNode = (JSQLNode)objNode;
+					if((Object)node instanceof JSQLArray){
+						nextNode.setKey(String.valueOf(keyIndex++));
 					}
 					nextNode.setAntenode(node);
 					if(checkNode(nextNode,tokens,branches_up,check)){
-						if(nextNode.key.equals(key)){
+						if(nextNode.getKey().equals(key)){
 							out("keysearch: match found");
 							if(currentIndex+1 == endOfPath){
 								out("keysearch: :adding node");
@@ -349,18 +353,19 @@ public class JQLEngine {
 		}
 		
 		private void returnAll(
-				JsonQueryNode node,
-				JsonQueryArray resultSet,
-				JsonQueryTokens tokens,
+				JSQLNode node,
+				JSQLResultSet<JSQLNode> resultSet,
+				JSQLTokens tokens,
 				int currentIndex,
 				int branches_up,
 				boolean check){
 			
-			if(node.element instanceof JsonQueryObject||node.element instanceof JsonQueryArray){
+			if(node.getElement() instanceof JSQLObject||node.getElement() instanceof JSQLArray){
 				int keyIndex = 0;
-				for (JsonQueryNode nextNode:node.each()){
-					if((Object)node instanceof JsonQueryArray){
-						nextNode.key = String.valueOf(keyIndex++);
+				for (Object objNode:node.getChildNodes()){
+					JSQLNode nextNode = (JSQLNode)objNode;
+					if((Object)node instanceof JSQLArray){
+						nextNode.setKey(String.valueOf(keyIndex++));
 					}
 					nextNode.setAntenode(node);
 					if(checkNode(nextNode,tokens,branches_up,check)){
@@ -422,12 +427,12 @@ public class JQLEngine {
 			return tokenMap;
 		}
 		
-		private ArrayList<JsonQueryTokens> getTokens(String queryString){
+		private ArrayList<JSQLTokens> getTokens(String queryString){
 			out("start getTokens");
-			ArrayList<JsonQueryTokens> queryList = new ArrayList<JsonQueryTokens>();
+			ArrayList<JSQLTokens> queryList = new ArrayList<JSQLTokens>();
 			String[] queries = queryString.split(QUERY_SEPARATOR);
 			for(String query:queries){
-				JsonQueryTokens tokens = new JsonQueryTokens();
+				JSQLTokens tokens = new JSQLTokens();
 				String[] paths = query.split(NOT_OPERATOR);
 				int j = 0;
 				for(String path:paths){
@@ -438,6 +443,14 @@ public class JQLEngine {
 							replaceAll(NOT_BACKSLASH+RIGHT_BRACKET_ESCAPE,EMPTY);
 					if(path.startsWith(PATH_DELIMETER+CHILD_OPERATOR))path = path.substring(1);
 					if(path.endsWith(CHILD_OPERATOR+PATH_DELIMETER))path = path.substring(0,path.length()-1);
+					
+					/*
+					 *  Forbidden sequences
+					 *  
+					 *  
+					 */
+					
+					
 					String[] keys = path.split(NOT_BACKSLASH+PATH_DELIMETER_REGEX,-1);
 					int k = 0;
 					for(String key:keys){
@@ -460,9 +473,7 @@ public class JQLEngine {
 			}
 			return queryList;
 		}
-		public boolean checkNode(JsonQueryNode _node,JsonQueryTokens tokens,int branches_up, boolean check){
-			
-	
+		private boolean checkNode(JSQLNode _node,JSQLTokens tokens,int branches_up, boolean check){
 			
 			boolean resume = true;
 			cntx.include = true;
@@ -472,15 +483,18 @@ public class JQLEngine {
 				
 				out("checknode:checking node");
 				
-				JsonQueryNode node = _node;
+				
 				ArrayList<String> array = new ArrayList<String>();
 				
 				cntx.include = true;
+				int checkCount=0;
 				
 				for(String[] exceptions:tokens.exceptionPaths){
 					array.clear();
+					JSQLNode node = _node;
+					checkCount++;
 					while(node.getAntenode()!=null){
-						array.add(node.key);
+						array.add(node.getKey());
 						node=node.getAntenode();
 					}
 					Collections.reverse(array);
@@ -493,7 +507,7 @@ public class JQLEngine {
 					for(int i = 0;i<array.size();i++){
 						out2(array.get(i)+" ");
 					}
-					
+					boolean childrenMustMatch = false;
 					int arrayIndex = 0;
 					int index;
 					for(index =0;index<exceptions.length;index++){
@@ -512,25 +526,31 @@ public class JQLEngine {
 								if(array.get(arrayIndex)==null){
 									break;
 								}else{
-									int newIndex = array.indexOf(exceptions[index+1]);
-									if(newIndex==-1){
-										out("checknode:did not found child");
-										break;
+									if(exceptions[index+1].equals(ALL_OPERATOR)){ //Must be end
+										childrenMustMatch = true;
 									}else{
-										for(int j = arrayIndex;j<newIndex;j++){
-											array.set(j,null);
+										int newIndex = array.indexOf(exceptions[index+1]);
+										if(newIndex==-1){
+											out("checknode:did not found child");
+											break;
+										}else{
+											for(int j = arrayIndex;j<newIndex;j++){
+												array.set(j,null);
+											}
+											arrayIndex=newIndex;
+											out("checknode:found child at :" +arrayIndex);
 										}
-										arrayIndex=newIndex;
-										out("checknode:found child at :" +arrayIndex);
 									}
 									index++;
 								}
+							}else{
+								childrenMustMatch = true;
 							}
+							
 						}else{
 							if(!exceptions[index].equals(array.get(arrayIndex))){
 								if(array.get(arrayIndex)!=null){
-									out("checknode:set stop checking");
-									cntx.check = false;
+									checkCount--;
 								}
 								break;
 							}
@@ -540,7 +560,7 @@ public class JQLEngine {
 					}
 					if(index==exceptions.length){
 						cntx.include=false;
-						if(exceptions[index-1].equals(CHILD_OPERATOR)){
+						if(childrenMustMatch){
 							out("checknode: set stop iterating");
 							resume = false;
 						}else{
@@ -556,8 +576,41 @@ public class JQLEngine {
 						out("checknode:including this node");
 					}
 				}
+				if(checkCount==0){
+					out("checknode:set stop checking");
+					cntx.check = false;
+				}
 				out("checknode:end check");
 			}
 			return resume;
+		}
+		
+		private JSQLNode path(JSQLNode node, Object[] keys, boolean addTreeInfo){
+			try{
+				int i=0;
+				for(i=0;i<keys.length;i++){
+					JSQLNode nextNode=null;
+					if(JSQLUtil.isInteger((String)keys[i])){
+						nextNode = (JSQLNode) node.getNextNode(Integer.parseInt((String)keys[i]));
+					}else{
+						nextNode = (JSQLNode) node.getNextNode((String)keys[i]);
+					}
+					if(nextNode!=null&&addTreeInfo){
+							nextNode.setKey((String)keys[i]);
+						nextNode.setAntenode(node);
+					}
+					node=nextNode;
+					if(node==null)break;
+				}
+				if(node!=null)return node;
+			}catch(Throwable e){
+				handleException(e);
+			}
+			return node.createNewNode(null,null);
+		}
+		
+		private void handleException(Throwable e){
+			System.out.println("error");
+			e.printStackTrace();
 		}
 }

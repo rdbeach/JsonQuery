@@ -6,6 +6,10 @@ import java.util.Iterator;
 
 import org.adrianwalker.multilinestring.Multiline;
 
+import src.JSQL.JSQLResultSet;
+import src.JSQL.JSQLNode;
+import src.JSQL.JSQLArray;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -126,14 +130,12 @@ public class JQT2 {
             JsonQuery $ = JsonQuery.fromJson(msg);
             //out($.get("phoneNumbers[1]").str());
             
-            //
+            //men.workers:*
             
-            JsonQueryArray ja = $.jql("select 'last_name' from ':properties.salary.*!address:'");
+            JSQLResultSet<JsonQuery> resultSet = $.jsql("select '*' from 'address:'");
             out("printing");
-           for(JsonQuery result : ja){
-            	//if(result.get("base").i()>4000)
-        	   // out("got result");
-            	out(result.val());
+            for(JsonQuery result : resultSet){
+            	out(result.getKey());
             }
            
            
