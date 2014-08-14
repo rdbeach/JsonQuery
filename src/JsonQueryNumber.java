@@ -3,10 +3,10 @@ package src;
 import src.JSQL.JSQLNumber;
 
 @SuppressWarnings("serial")
-public class JSONQueryNumber extends Number implements JSQLNumber{
+public class JsonQueryNumber extends Number implements JSQLNumber{
 	
 	private transient Number n;
-    public JSONQueryNumber(Number n){
+    public JsonQueryNumber(Number n){
     	this.n = n;
     }
     

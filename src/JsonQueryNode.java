@@ -61,7 +61,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 					disableHtmlEscaping().
 					registerTypeAdapter(JsonQueryNode.class, new JsonQueryDeserializer()).
 					registerTypeAdapter(JsonQueryNode.class, new JsonQuerySerializer()).
-					registerTypeAdapter(JSONQueryNumber.class, new JsonQueryNumberSerializer()).
+					registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
 					serializeNulls().
 					create():static_gson));
 		return gson;
@@ -787,7 +787,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 			return "array";
 		}else if(element instanceof String){
 			return "string";
-		}else if(element instanceof JSONQueryNumber){
+		}else if(element instanceof JsonQueryNumber){
 			return "number";
 		}else if(element instanceof Boolean){
 			return "boolean";
@@ -808,7 +808,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	
 	private  Object formatValue(Object value){
 		if(value instanceof Number){
-			value = new JSONQueryNumber(new LazilyParsedNumber(value.toString()));
+			value = new JsonQueryNumber(new LazilyParsedNumber(value.toString()));
 		}
 		return  value;
 	}

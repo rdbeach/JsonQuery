@@ -15,7 +15,7 @@ public abstract class JsonQuery {
 			.registerTypeAdapter(JsonQueryNode.class, new JsonQueryDeserializer())
 			.serializeNulls()
 			.registerTypeAdapter(JsonQueryNode.class, new JsonQuerySerializer())
-			.registerTypeAdapter(JSONQueryNumber.class,
+			.registerTypeAdapter(JsonQueryNumber.class,
 					new JsonQueryNumberSerializer()).create();
 	public static final String EMPTY = "";
 	
@@ -24,7 +24,7 @@ public abstract class JsonQuery {
 				disableHtmlEscaping().
 				registerTypeAdapter(JsonQueryNode.class, new JsonQueryDeserializer()).
 				registerTypeAdapter(JsonQueryNode.class, new JsonQuerySerializer()).
-				registerTypeAdapter(JSONQueryNumber.class, new JsonQueryNumberSerializer()).
+				registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
 				serializeNulls().
 				create();
 		try{
