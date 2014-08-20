@@ -1,9 +1,16 @@
 package src.JSQL;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import src.JsonQueryNode;
+import src.JsonQueryObject;
 
 
 //import src.JsonQueryUtil;
@@ -13,40 +20,27 @@ import java.util.Iterator;
 
 public class JSQLEngine {
 	
-	private static final String[] KEYWORDS = {"select",
-		"from",
-		"where",
-		"order by",
-		"limit"};
 	
 	private static final String SELECT = "select";
-	private static final Object FROM = "from";
-	private static final Object WHERE = "where";
-	private static final Object ORDER_BY = "order by";
+	private static final String UPDATE = "update";
+	private static final String INSERT = "insert into";
+	private static final String FROM = "from";
+	private static final String SET_VALUE = "set value";
+	private static final String SET = "set";
+	private static final String WHERE = "where";
+	private static final String ORDER_BY = "order by";
 	private static final String LIMIT = "limit";
 	
-	private static final String ROOT_KEY = "root";
+	
 	private static final String EMPTY = "";
-	private static final String QUERY_SEPARATOR = ",";
-	private static final String NOT_OPERATOR = "!";
 	private static final String ALL_OPERATOR = "*";
+	private static final String ANY_OPERATOR = "?";
 	private static final String CHILD_OPERATOR = ":";
-	private static final String PATH_DELIMETER = ".";
-	private static final String CLAUSE_DELIMETER = "'";
-	private static final String SPACE = " ";
-	private static final String NOT_BACKSLASH = "(?<!\\\\)";
-	private static final String PATH_DELIMETER_REGEX = "[.]";
-	private static final String DOUBLE_BACKSLASH = "\\";
-	private static final String LEFT_BRACKET_ESCAPE = "\\[";
-	private static final String RIGHT_BRACKET_ESCAPE = "\\]";
-	private static final CharSequence LEFT_BRACKET = "[";
-	private static final CharSequence RIGHT_BRACKET = "]";
+	private static final String[] SETCLAUSE_OPERATORS = {"="};
 	
-	private static final String[] SPECIAL_CHARS = {".", "*",":","!",",","'"};  // separator
+	JSQLParser jsqlParser = new JSQLParser();
 	
-	private static final String[] FORBIDDEN_SEQUENCES = {"::","**",":.",".:","!!",",,"};
-	
-	private static final String[] WHERECLAUSE_OPERATORS = {"=" ,"!=","<","<=",">",">="};
+	private JSQLExpression evaluator;
 	
 	private JQLContext cntx;
 	
@@ -64,7 +58,7 @@ public class JSQLEngine {
 	}
 	
 	public JSQLResultSet<JSQLNode> execute(JSQLNode node,String queryString){
-		HashMap<String,String> clauses = parseQueryString(queryString);
+		HashMap<String,String> clauses = jsqlParser.parseQueryString(queryString);
 		if(clauses==null)return new JSQLResultSet<JSQLNode>();
 		return executeJQL(node, clauses);
 	}
@@ -72,17 +66,25 @@ public class JSQLEngine {
 	private JSQLResultSet<JSQLNode> executeJQL(JSQLNode node, HashMap<String,String> clauses){
 			
 			out("FROM clause");
-			
+
 			JSQLResultSet<JSQLNode> fromResultSet = new JSQLResultSet<JSQLNode>();
-			node.setKey(ROOT_KEY);
 			
 			String fromClause=ALL_OPERATOR;
 			if(clauses.containsKey(FROM))fromClause=clauses.get(FROM);
 			if(fromClause.equals(ALL_OPERATOR)){
 				fromResultSet.add(node);
 			}else{
-				ArrayList<JSQLTokens> queries = getTokens(fromClause);
-				executeJQLClause(node,fromResultSet,queries);
+				ArrayList<JSQLTokens> queries = jsqlParser.parseSelector(fromClause);
+				executeJSQLClause(node,fromResultSet,queries);
+			}
+			
+			out("UPDATE clause");
+			
+			if(clauses.containsKey(UPDATE)){
+				String updateClause=clauses.get(UPDATE);
+				ArrayList<JSQLTokens> queries = jsqlParser.parseSelector(updateClause);
+				fromResultSet.clear();
+				executeJSQLClause(node,fromResultSet,queries);
 			}
 			
 			out("WHERE clause");
@@ -101,17 +103,34 @@ public class JSQLEngine {
 				if(selectClause.equals(ALL_OPERATOR)){
 					selectResultSet=fromResultSet;
 				}else{
-					ArrayList<JSQLTokens> queries = getTokens(selectClause);
-					for(JSQLNode subNode: (JSQLResultSet<JSQLNode>)fromResultSet){
-							executeJQLClause(subNode,selectResultSet,queries);
-					}
+					//ArrayList<JSQLTokens> queries = jsqlParser.parseSelector(selectClause);
+					//for(JSQLNode subNode: (JSQLResultSet<JSQLNode>)fromResultSet){
+							executeSelectClause(selectResultSet,fromResultSet,selectClause);
+					//}
 				}
 			}
-			out("finished");
+			
+			out("SET VALUE clause");
+			
+			if(clauses.containsKey(SET_VALUE)){
+				String value=clauses.get(SET_VALUE);
+				executeSetValueClause(fromResultSet,value);
+				selectResultSet=fromResultSet;
+			}
+			
+			out("SET clause");
+			
+			if(clauses.containsKey(SET)){
+				String setClause=clauses.get(SET);
+				executeSetClause(fromResultSet,setClause);
+				selectResultSet=fromResultSet;
+			}
+			
+			out("Finished");
 			return selectResultSet;
 		}
 		
-		private void executeJQLClause(JSQLNode node, 
+		private void executeJSQLClause(JSQLNode node, 
 				JSQLResultSet<JSQLNode> resultSet,
 				ArrayList<JSQLTokens> queries
 				){
@@ -126,15 +145,233 @@ public class JSQLEngine {
 			}
 		}
 		
+		private void executeSelectClause(JSQLResultSet<JSQLNode> selectResultSet,JSQLResultSet<JSQLNode> fromResultSet,String selectClause){
+			out2("ExecuteSelectClause: "+selectClause+"\n");
+			
+			// get the selectors
+			List<String> expressions = jsqlParser.parseSelectClause(selectClause);
+			List<JSQLTokenMap<Integer,Object>> variableMaps = new ArrayList<JSQLTokenMap<Integer,Object>>();
+			List<Boolean> isExpressionList = new ArrayList<Boolean>();
+			List<List<String>> tokensList = new ArrayList<List<String>>();
+			
+			for(String expr:expressions){
+				
+				if(evaluator==null)
+					evaluator = new JSQLExpression();
+				
+				JSQLTokenMap<Integer,Object> variableMap = jsqlParser.parseExpression(expr,evaluator);
+				
+				if(variableMap==null)return;
+				
+				List<String> tokens = evaluator.getContext();
+				
+				listIt(variableMap.tokens,"SelectClause: List of variable values","value: ");
+				listIt(variableMap.type,"SelectClause: List of variable types","type: ");
+			
+				variableMaps.add(variableMap);
+				tokensList.add(tokens);
+				
+				boolean isExpression = false;
+				if(tokens.size()>1){
+					isExpression = true;
+					
+				}
+				isExpressionList.add(isExpression);
+			}
+			
+			int count=0; //TODO test only
+			for (JSQLNode node:fromResultSet) {
+				out2("\nExec SelectClause: iterating nodes "+ count++ +" for select clause\n");
+				int i = 0;
+				for(String expr:expressions){
+					boolean isExpression = isExpressionList.get(i);
+					if(isExpression==false){
+						out2("Simple selection");
+						ArrayList<JSQLTokens> query = jsqlParser.parseSelector(expr);
+							executeJSQLClause(node,selectResultSet,query);
+					}else{
+						JSQLTokenMap<Integer,Object> variableMap = variableMaps.get(i);
+						evaluator.setContext(expr,tokensList.get(i));
+						boolean pass = false;
+						List<JSQLResultSet<JSQLNode>> subsetList = new ArrayList<JSQLResultSet<JSQLNode>>();
+						List<Object> valsList = new ArrayList<Object>();
+						int j=0;
+						for(Object variable:variableMap.tokens){
+							if(variableMap.type.get(j)==0){
+								JSQLResultSet<JSQLNode> resultSet = (JSQLResultSet<JSQLNode>)execute(node,"Select * From "+variable+"");
+								out2("Exec Selectlause: Got resultset");
+								if(!resultSet.isEmpty()){
+									pass=true;
+									valsList.add(0);
+									subsetList.add(resultSet);
+								}else{
+									out2("Resultset is empty!!");
+									pass=false;
+									break;
+								}
+							}else{
+								valsList.add(variable);
+								subsetList.add(null);
+							}
+							j++;
+						}
+						listIt(valsList,"Exec SelectClause: ValsList:\n------------------------------","value: ");
+						if(pass){
+							iterateResultSets(variableMap,valsList,subsetList,0,pass,node,expr,selectResultSet);
+						}
+					}
+					i++;
+				}
+			}
+			
+		}
+		
 		private void executeWhereClause(JSQLResultSet<JSQLNode> array,String whereClause){
+			out2("ExecuteWhereClause: "+whereClause+"\n");
+
+			if(evaluator==null)
+				evaluator = new JSQLExpression();
+			
+			JSQLTokenMap<Integer,Object> variableMap = jsqlParser.parseExpression(whereClause,evaluator);
+			
+			
+			
+			if(variableMap==null)return;
+			
+			listIt(variableMap.tokens,"List of variable values","value: ");
+			listIt(variableMap.type,"List of variable types","type: ");
+			
+			Iterator<JSQLNode> iterator = ((JSQLResultSet<JSQLNode>)array).iterator();
+			int count=0; //TODO test only
+			while (iterator.hasNext()) {
+				out2("\nExec WhereClause: iterating nodes "+count+++" for where clause\n");
+			    JSQLNode node = iterator.next();
+				boolean pass = false;
+				List<JSQLResultSet<JSQLNode>> subsetList = new ArrayList<JSQLResultSet<JSQLNode>>();
+				List<Object> valsList = new ArrayList<Object>();
+				int i=0;
+				for(Object variable:variableMap.tokens){
+					if(variableMap.type.get(i)==0){
+						JSQLResultSet<JSQLNode> resultSet = (JSQLResultSet<JSQLNode>)execute(node,"Select * From "+variable+"");
+						out2("Exec WhereClause: Got resultset");
+						if(!resultSet.isEmpty()){
+							pass=true;
+							valsList.add(0);
+							subsetList.add(resultSet);
+						}else{
+							out2("Resultset is empty!!");
+							pass=false;
+							break;
+						}
+					}else{
+						valsList.add(variable);
+						subsetList.add(null);
+					}
+					i++;
+				}
+				listIt(valsList,"Exec WhereClause: ValsList:\n------------------------------","value: ");
+				if(pass){
+					pass=iterateResultSets(variableMap,valsList,subsetList,0,pass,null,null,null);
+				}
+				if(!pass){
+					out2("Pass failed: Removing subnode");
+					iterator.remove();
+				}
+			}
+		}
+		
+		private boolean iterateResultSets(JSQLTokenMap<Integer,Object> variableMap,
+				List<Object> valsList,
+				List<JSQLResultSet<JSQLNode>> subsetList,
+				int i,
+				boolean pass,
+				JSQLNode node,
+				String expr,
+				JSQLResultSet<JSQLNode> selectResultSet){
+			if(!pass)return false;
+			out2("iterateResultSets: variable iteration "+i);
+			if(variableMap.type.get(i)==0){ // Path
+				out2("variable name: " + variableMap.tokens.get(i));
+				JSQLResultSet<JSQLNode> resultSet=subsetList.get(i);
+				out2("Pulling resultset");
+				if(!resultSet.isEmpty()){
+					out2("Resultset is not empty. Iterating...");
+				    for(int j = 0;j<resultSet.size();j++){
+				    	out2("iterateResultSets: resultset iteration "+j);
+				    	JSQLNode subnode = resultSet.get(j);
+				    	if(subnode.isLeaf()){
+				    		out2("Adding node to valslist: "+subnode.getElement());
+							valsList.set(i,subnode.getElement());
+						}else{
+							out2("Subnode is not a leaf");
+							pass=false;
+							break;
+						}
+				    	out2("evaluates to : "+evaluator.eval(valsList));
+				    	if(i!=variableMap.tokens.size()-1){
+				    		pass=iterateResultSets(variableMap,valsList,subsetList,i+1,pass,node,expr,selectResultSet);
+				    	}else{
+				    		if(expr!=null){
+				    			selectResultSet.add(node.createNewNode(evaluator.eval(valsList),expr)); 
+				    		}else{
+				    			if(evaluator.eval(valsList)!=BigDecimal.ONE){
+								   out2("eval produced false");
+								   pass=false;
+								   break;
+							    }
+				    		}
+						    
+				    	}
+				    }
+				}else{
+					pass=false;
+				}
+			}else{
+				if(i!=variableMap.tokens.size()-1){
+					pass=iterateResultSets(variableMap,valsList,subsetList,i+1,pass,node,expr,selectResultSet);
+				}else{
+					if(expr!=null){
+						selectResultSet.add(node.createNewNode(evaluator.eval(valsList),expr));
+		    		}else{
+						if(evaluator.eval(valsList)!=BigDecimal.ONE){
+						   out2("eval produced false");
+						   pass=false;
+					    }
+		    		}
+				}
+			}
+			return pass;
+		}
+			
+		
+		private void executeSetValueClause(JSQLResultSet<JSQLNode> array,String value){
+			
+			out("ExecuteSetValueClause: begin");
+			
+			Iterator<JSQLNode> iterator = ((JSQLResultSet<JSQLNode>)array).iterator();
+			while (iterator.hasNext()) {
+
+				JSQLNode node = iterator.next();
+				out(node.getKey(),true);
+
+				if(node.isLeaf()){
+					out("ExecuteSetValueClause: Setting value: "+value);
+					node.setElement(value);
+				}
+			}
+		}
+		
+		private void executeSetClause(JSQLResultSet<JSQLNode> array,String setClause){
+			
+			out("ExecuteSetClause: begin");
 			
 			int operator_array_index=0;
 			int operator_index=-1;
 			int operator_length=1;
 			
-			for(int i = 0;i<WHERECLAUSE_OPERATORS.length;i++){
-				int length = WHERECLAUSE_OPERATORS[i].length();
-				int index = whereClause.lastIndexOf(WHERECLAUSE_OPERATORS[i]);
+			for(int i = 0;i<SETCLAUSE_OPERATORS.length;i++){
+				int length = SETCLAUSE_OPERATORS[i].length();
+				int index = setClause.lastIndexOf(SETCLAUSE_OPERATORS[i]);
 				if(index>0){
 					int oldLastIndex = operator_index+operator_length;
 					int newLastIndex = index + length;
@@ -146,78 +383,41 @@ public class JSQLEngine {
 				}
 			}
 			
-			out("In where clause: operator index:"+operator_index + " " + operator_length);
+			out("In set clause: operator index:"+operator_index + " " + operator_length);
 			
-			if(operator_index!=-1&&operator_index+operator_length<whereClause.length()){
+			if(operator_index!=-1&&operator_index+operator_length<setClause.length()){
 				
 				String[] operands = new String[2];
-				operands[0] = whereClause.substring(0,operator_index);
-				operands[1] = whereClause.substring(operator_index+operator_length,whereClause.length());
+				operands[0] = setClause.substring(0,operator_index);
+				operands[1] = setClause.substring(operator_index+operator_length,setClause.length());
 				
-				out("where clause op1:"+operands[0]);
-				out("where clause op2:"+operands[1]);
+				out("set clause op1:"+operands[0]);
+				out("set clause op2:"+operands[1]);
+
 				Iterator<JSQLNode> iterator = ((JSQLResultSet<JSQLNode>)array).iterator();
 				while (iterator.hasNext()) {
+
 				   JSQLNode node = iterator.next();
-					boolean pass = false;
-					for(JSQLNode subNode:(JSQLResultSet<JSQLNode>)execute(node,"Select '*' From '"+operands[0]+"'")){
-					    Object val = ((JSQLNode)subNode).getElement();
+				   out(node.getKey(),true);
+
+					for(JSQLNode subNode:(JSQLResultSet<JSQLNode>)execute(node,"Select * From "+operands[0]+"")){
+
+						subNode  = (JSQLNode)subNode;
+					    String value = operands[1];
+					    
 						switch (operator_array_index){
 							case 0: // equals
-								out("=: "+ val + " " +operands[1]);
-								if(val instanceof JSQLNumber){
-									if(((JSQLNumber)val).doubleValue()==Double.valueOf(operands[1]))pass=true;
-								}else if(val instanceof Boolean){
-									if((Boolean)val.equals(Boolean.valueOf(operands[1])))pass=true;
-								}else if(val instanceof String){
-									if(val.equals(operands[1]))pass=true;
+								if(subNode.isLeaf()){
+									out("ExecuteSetClause: Setting value: "+value);
+									subNode.setElement(value);
 								}
 								break;
-							case 1: // not equals
-								out("!=: "+ val + " " +operands[1]);
-								if(val instanceof JSQLNumber){
-									if(((JSQLNumber)val).doubleValue()!=Double.valueOf(operands[1]))pass=true;
-								}else if(val instanceof Boolean){
-									if(!(Boolean)val.equals(Boolean.valueOf(operands[1])))pass=true;
-								}else if(val instanceof String){
-									if(!val.equals(operands[1]))pass=true;
-								}
-								break;
-							case 2: // less than
-								out("<: "+ val + " " +operands[1]);
-								if(val instanceof JSQLNumber){
-									if(((JSQLNumber)val).doubleValue()<Double.valueOf(operands[1]))pass=true;
-								}
-								break;
-							case 3: // less than equal
-								out("<=: "+ val + " " +operands[1]);
-								if(val instanceof JSQLNumber){
-									if(((JSQLNumber)val).doubleValue()<=Double.valueOf(operands[1]))pass=true;
-								}
-								break;
-							case 4: // greater than
-								out(">: "+ val + " " +operands[1]);
-								if(val instanceof JSQLNumber){
-									if(((JSQLNumber)val).doubleValue()>Double.valueOf(operands[1]))pass=true;
-								}
-								break;
-							case 5: // greater than equal
-								out(">=: "+ val + " " +operands[1]);
-								if(val instanceof JSQLNumber){
-									if(((JSQLNumber)val).doubleValue()>=Double.valueOf(operands[1]))pass=true;
-								}
-								break;
-							
 						}
-						out("where clause pass: "+ pass);
-						if(!pass){
-							iterator.remove();
-							break;
-						}
+						
 					}
 				}
 			}else{
-				array.clear();
+				err("Jsql Syntax error: invalid select clause.");
 			}
 		}
 		
@@ -228,6 +428,7 @@ public class JSQLEngine {
 				int currentIndex,
 				int branches_up,
 				boolean check){
+			
 			out("Fetching resultSet:");
 			ArrayList<String> searchPath= new ArrayList<String>();
 			boolean next = false;
@@ -235,8 +436,8 @@ public class JSQLEngine {
 			int index;
 			int endOfPath = tokens.path.length-branches_up;
 			for(index = currentIndex;index<endOfPath;index++){
-				out("iterating path-index: "+index+ " value:" + tokens.path[index]);
-				if(tokens.path[index].equals(ALL_OPERATOR)||tokens.path[index].equals(EMPTY)){
+				out("Iterating path-index: "+index+ " value:" + tokens.path[index]);
+				if(tokens.path[index].equals(ANY_OPERATOR)){
 					next = true;
 					break;
 				}else if(tokens.path[index].equals(CHILD_OPERATOR)){
@@ -247,15 +448,15 @@ public class JSQLEngine {
 				}
 			}
 			if(!searchPath.isEmpty()){
-				out("build result: grabing path");
+				out("Build result: grabing path");
 				JSQLNode nextNode = path(node,searchPath.toArray(),true);
 				if(checkNode(nextNode,tokens,branches_up,check)){
 					if(nextNode.getElement()!=null){
 						if(index == endOfPath){
-							out("build result: adding from path: "+ nextNode.getKey());
+							out("Build result: adding from path: "+ nextNode.getKey());
 							addToResultSet(nextNode,resultSet,branches_up,cntx.include);
 						}else{
-							out("build result: continue");
+							out("Build result: continue");
 							buildResultSet(nextNode,resultSet,tokens,index,branches_up,cntx.check);
 						}
 					}
@@ -263,21 +464,21 @@ public class JSQLEngine {
 				return;
 			}
 			if(next){
-				out("build result: next");
+				out("Build result: next");
 				index++;
 				int keyIndex = 0;
 				for (Object objNode:node.getChildNodes()){
 					JSQLNode nextNode = (JSQLNode)objNode;
-					if(node instanceof JSQLArray){
+					if(node.getElement() instanceof JSQLArray){
 						nextNode.setKey(String.valueOf(keyIndex++));
 					}
 					nextNode.setAntenode(node);
 					if(checkNode(nextNode,tokens,branches_up,check)){
 						if(index == endOfPath){
-							out("build result: adding from next");
+							out("Build result: adding from next");
 							addToResultSet(nextNode,resultSet,branches_up,cntx.include);
 						}else{
-							out("build result: continue");
+							out("Build result: continue");
 							buildResultSet(nextNode,resultSet,tokens,index,branches_up,cntx.check);
 						}
 					}
@@ -288,15 +489,15 @@ public class JSQLEngine {
 			if(child){
 				index++;
 				if(index<endOfPath){
-					if(!tokens.path[index].equals(ALL_OPERATOR)){
-						out("build result: child search:"+index);
+					if(!tokens.path[index].equals(ANY_OPERATOR)){
+						out("Build result: child search:"+index);
 						keySearch(node,resultSet,tokens,index,branches_up,check);
 					}else{
 						returnAll(node,resultSet,tokens,index,branches_up,check);
 					}
 				}else{
 					if(checkNode(node,tokens,branches_up,check)){
-						out("build result: adding from retern all + node");
+						out("Build result: adding from retern all + node");
 						addToResultSet(node,resultSet,branches_up,cntx.include);
 						returnAll(node,resultSet,tokens,index,branches_up,cntx.check);
 					}
@@ -344,28 +545,28 @@ public class JSQLEngine {
 				int currentIndex,
 				int branches_up,
 				boolean check){
-			
+			out("In keySearch");
 			int endOfPath = tokens.path.length-branches_up;
 			String key = tokens.path[currentIndex];
 
 			if(node.getElement() instanceof JSQLObject||node.getElement() instanceof JSQLArray){
 				int keyIndex = 0;
-				out("instance of array: " +(node.getElement() instanceof JSQLArray));
+				out("Instance of array: " +(node.getElement() instanceof JSQLArray));
 				for (Object objNode:node.getChildNodes()){
-					out("iterating");
+					out("Iterating child nodes");
 					JSQLNode nextNode = (JSQLNode)objNode;
-					if((Object)node instanceof JSQLArray){
+					if(node.getElement() instanceof JSQLArray){
 						nextNode.setKey(String.valueOf(keyIndex++));
 					}
 					nextNode.setAntenode(node);
 					if(checkNode(nextNode,tokens,branches_up,check)){
 						if(nextNode.getKey().equals(key)){
-							out("keysearch: match found");
+							out("keySearch: match found");
 							if(currentIndex+1 == endOfPath){
-								out("keysearch: :adding node");
+								out("keySearch: :adding node");
 								addToResultSet(nextNode,resultSet,branches_up,cntx.include);
 							}else{
-								out("keysearch: continue looking");
+								out("keySearch: continue looking");
 								buildResultSet(nextNode,resultSet,tokens,currentIndex+1,branches_up,cntx.check);
 							}
 						}else{
@@ -388,7 +589,7 @@ public class JSQLEngine {
 				int keyIndex = 0;
 				for (Object objNode:node.getChildNodes()){
 					JSQLNode nextNode = (JSQLNode)objNode;
-					if((Object)node instanceof JSQLArray){
+					if(node.getElement() instanceof JSQLArray){
 						nextNode.setKey(String.valueOf(keyIndex++));
 					}
 					nextNode.setAntenode(node);
@@ -410,7 +611,7 @@ public class JSQLEngine {
 			
 			if(check){
 				
-				out("checknode:checking node");
+				out("checknode: checking node");
 				
 				
 				ArrayList<String> array = new ArrayList<String>();
@@ -431,18 +632,20 @@ public class JSQLEngine {
 					for(int i = 0;i<branches_up;i++){
 						array.remove(0);
 					}
-					// debug
-					out2("checknode: ");
+					
+					// DEBUG 
+					out("checknode: ",true);
 					for(int i = 0;i<array.size();i++){
-						out2(array.get(i)+" ");
+						out(array.get(i)+" ",true);
 					}
+					
 					boolean childrenMustMatch = false;
 					int arrayIndex = 0;
 					int index;
 					for(index =0;index<exceptions.length;index++){
-						out("checknode:iterating exception:"+1+" execption-index: "+index+ " value:" + exceptions[index]+" against path vlaue:"+array.get(arrayIndex));
+						out("checknode: iterating exception: "+1+" execption-index: "+index+ " value:" + exceptions[index]+" against path value:"+array.get(arrayIndex));
 						
-						if(exceptions[index].equals(ALL_OPERATOR)||exceptions[index].equals(EMPTY)){
+						if(exceptions[index].equals(ANY_OPERATOR)){
 							if(array.get(arrayIndex)==null){
 								break;
 							}
@@ -455,19 +658,19 @@ public class JSQLEngine {
 								if(array.get(arrayIndex)==null){
 									break;
 								}else{
-									if(exceptions[index+1].equals(ALL_OPERATOR)){ //Must be end
+									if(exceptions[index+1].equals(ANY_OPERATOR)){ //Must be end
 										childrenMustMatch = true;
 									}else{
 										int newIndex = array.indexOf(exceptions[index+1]);
 										if(newIndex==-1){
-											out("checknode:did not found child");
+											out("checknode: did not found child");
 											break;
 										}else{
 											for(int j = arrayIndex;j<newIndex;j++){
 												array.set(j,null);
 											}
 											arrayIndex=newIndex;
-											out("checknode:found child at :" +arrayIndex);
+											out("checknode: found child at :" +arrayIndex);
 										}
 									}
 									index++;
@@ -506,118 +709,12 @@ public class JSQLEngine {
 					}
 				}
 				if(checkCount==0){
-					out("checknode:set stop checking");
+					out("checknode: set stop checking");
 					cntx.check = false;
 				}
-				out("checknode:end check");
+				out("checknode: end check");
 			}
 			return resume;
-		}
-		
-		private HashMap<String,String> parseQueryString(String queryString){
-			String[] tokens = queryString.trim().split(NOT_BACKSLASH+CLAUSE_DELIMETER+EMPTY);
-			if(tokens.length<2){
-				err("Jsql syntax error. Delimeter missing");
-				return null;
-			}
-			HashMap<String,String> tokenMap = new HashMap<String,String>();
-			int precedence=0;
-			boolean selectFound=false;
-			for(int i = 0;i<tokens.length;i+=2){
-				if(tokens[i].trim().toLowerCase().startsWith(LIMIT)){
-					tokens = tokens[i].split(SPACE);
-					if(tokens.length>1){
-						tokens[1].trim();
-					}
-					if(tokens.length!=2){
-						err("Jsql syntax error. Invalid limit Clause");
-						return null;
-					}
-					out("parseQuery: " +KEYWORDS[precedence]+" "+tokens[1]);
-					tokenMap.put(LIMIT,tokens[1]);
-				}else{
-					String keyword = tokens[i].trim();
-					boolean found = false;
-					int count = 0;
-					for (String kw : KEYWORDS) {
-					    if (keyword.equalsIgnoreCase(kw)) {
-					        if(precedence > count){
-					        	err("Jsql syntax error. Keywords out of order.");
-					        	return null;
-					        }
-					        precedence=count;
-					        found = true;
-					        break;
-					    }
-					    count++;
-					}
-					if (!found) {
-						err("Jsql syntax error. Delimeter missing or invalid Keyword: "+ keyword);
-						return null;
-					}
-					if(i+1>=tokens.length){
-						err("Jsql syntax error. Delimeter missing.");
-						return null;
-					}
-					if(keyword.equalsIgnoreCase(SELECT))selectFound=true;
-					out("parseQuery: " +KEYWORDS[precedence]+" "+tokens[i+1]);
-					tokenMap.put(KEYWORDS[precedence],tokens[i+1]);
-				}
-			}
-			if(!selectFound){
-				err("Jsql syntax error. Keyword Select missing.");
-				return null;
-			}
-			return tokenMap;
-		}
-		
-		private ArrayList<JSQLTokens> getTokens(String queryString){
-			out("start getTokens");
-			ArrayList<JSQLTokens> queryList = new ArrayList<JSQLTokens>();
-			
-			for(int i = 0;i<FORBIDDEN_SEQUENCES.length;i++){
-				if(queryString.contains(FORBIDDEN_SEQUENCES[i])){
-					err("Jsql syntax error. Forbidden sequence: " + FORBIDDEN_SEQUENCES[i] + ".");
-					return queryList;
-				}
-			}
-			
-			String[] queries = queryString.split(QUERY_SEPARATOR);
-			for(String query:queries){
-				JSQLTokens tokens = new JSQLTokens();
-				String[] paths = query.split(NOT_OPERATOR);
-				int j = 0;
-				for(String path:paths){
-					out("getTokens: path:" +path);
-					path = path.
-							replaceAll(NOT_BACKSLASH+CHILD_OPERATOR,PATH_DELIMETER+CHILD_OPERATOR+PATH_DELIMETER).
-							replaceAll(NOT_BACKSLASH+LEFT_BRACKET_ESCAPE,PATH_DELIMETER).
-							replaceAll(NOT_BACKSLASH+RIGHT_BRACKET_ESCAPE,EMPTY);
-					if(path.startsWith(PATH_DELIMETER+CHILD_OPERATOR))path = path.substring(1);
-					if(path.endsWith(CHILD_OPERATOR+PATH_DELIMETER))path = path.substring(0,path.length()-1);
-					
-					
-					String[] keys = path.split(NOT_BACKSLASH+PATH_DELIMETER_REGEX,-1);
-					int k = 0;
-					for(String key:keys){
-						out("getTokens: key:" +key);
-						for(int count=0;count<SPECIAL_CHARS.length;count++){
-							key=key.replace(DOUBLE_BACKSLASH+SPECIAL_CHARS[count], SPECIAL_CHARS[count]); // path
-						}
-						keys[k]=key;
-						k++;
-					}
-					if(j==0){
-						tokens.path=keys;
-					}else{
-						if(tokens.exceptionPaths==null)tokens.exceptionPaths = new ArrayList<String[]>();
-						tokens.exceptionPaths.add(keys);
-					}
-					j++;
-				}
-				queryList.add(tokens);
-			}
-			return queryList;
 		}
 		
 		private void handleException(Throwable e){
@@ -634,7 +731,22 @@ public class JSQLEngine {
 			//System.out.println(msg);
 		}
 		
-		private void out2(Object msg){
+		private void out(Object msg, boolean inline){
 			//System.out.print(msg);
+		}
+		
+		private void out2(Object msg){
+			System.out.println(msg);
+		}
+		
+		private void listIt(List list,String start,String loopStr){
+			out2("");
+			out2(start);
+			int count=0;
+			for (Object elem : list) {
+				out2(loopStr+count+ " "+ elem.toString());
+				count++;
+			}
+			out2("");
 		}
 }

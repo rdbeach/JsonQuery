@@ -59,29 +59,29 @@ public class JsonQueryTest {
 			System.out.println(msg);
 			
 			// create JSON object
-			JsonQuery json = JsonQuery.fromJson(msg);
+			JsonQuery $ = JsonQuery.fromJson(msg);
 			
 			// or recreate JSON string from JSON object using class method
-			out(json.toJson());
+			out($.toJson());
 			
 			// Whats my city? (str gets a string)
-			out(json.get("address").str("city"));
+			out($.get("address.city").str());
 			
 			//You can also use val, but this returns object so you must cast to the type you want
-			String city = (String) json.get("address").val("city");
+			String city = (String) $.get("address").val("city");
 			out(city);
 			
 			// Whats my phone # (i gets an integer)
-			out(json.get("phoneNumbers").i(1));
+			out($.get("phoneNumbers.1").i());
 			
 			// Change my city
-			json.get("address").set("city","san fran");
+			$.get("address").set("city","san fran");
 			
 			// Print new address in json format
-			out(json.get("address").toJson());
+			out($.get("address").toJson());
 			
 			// Update phone numbers
-			JsonQuery phoneNumbers = json.get("phoneNumbers");
+			JsonQuery phoneNumbers = $.get("phoneNumbers");
 			phoneNumbers.add(0,5555555);
 			phoneNumbers.remove(1);
 			
@@ -89,38 +89,45 @@ public class JsonQueryTest {
 			out(phoneNumbers.toJson());
 			
 			// Add my hobbies
-			json.jset("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
+			$.jset("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
 			
 			// Print the whole thing again
-			out(json.toJson());
+			out($.toJson());
 			
 			// Actually I don't like swimming
-			json.get("hobbies").remove(2);
-			out(json.get("hobbies").toJson());
+			$.get("hobbies").remove(2);
+			out($.get("hobbies").toJson());
 			
 			// Oh no, I lost my job
-			json.remove("role");
-			json.set("employed",false);
+			$.remove("role");
+			$.set("employed",false);
 			
 			// Print the whole thing again
-			out(json.toJson());
+			out($.toJson());
 			
 			// Go deeper in the tree
-			json.get("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
-			out(json.get("properties").toJson());
+			$.get("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
+			out($.get("properties").toJson());
 			
 			// You can also append to the JSON object like this
 			// first remove pets
-			json.get("properties").remove("pets");
+			$.get("properties").remove("pets");
 			
 			// create a pets JSON object
 			JsonQuery pets = JsonQuery.fromJson(myPets);
 			
 			// add it
-			json.get("properties").set("pets",pets);
+			$.get("properties").set("pets",pets);
 			
 			// print all
-			out(json.toJson());
+			out($.toJson());
+			
+			// Test msg2
+			
+			$ = JsonQuery.fromJson(msg2);
+            out(
+            	$.get("data.translations.0.translatedText").val()
+            );
 			
 		}catch(Exception e){System.out.println(e);};
 	}

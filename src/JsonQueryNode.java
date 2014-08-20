@@ -22,10 +22,6 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	private static final String NOT_BACKSLASH = "(?<!\\\\)";
 	private static final String PATH_DELIMETER_REGEX = "[.]";
 	private static final String DOUBLE_BACKSLASH = "\\";
-	private static final String LEFT_BRACKET_ESCAPE = "\\[";
-	private static final String RIGHT_BRACKET_ESCAPE = "\\]";
-	private static final CharSequence LEFT_BRACKET = "[";
-	private static final CharSequence RIGHT_BRACKET = "]";
 	
 	public transient String key = EMPTY;
 	
@@ -136,16 +132,11 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	
 	private String[] getKeys(String path){
 		String[] keys = path.
-				replaceAll(NOT_BACKSLASH+LEFT_BRACKET_ESCAPE,PATH_DELIMETER).
-				replaceAll(NOT_BACKSLASH+RIGHT_BRACKET_ESCAPE,EMPTY).
 				split(NOT_BACKSLASH+PATH_DELIMETER_REGEX);
 		int count=0;
 		for(String key:keys){
 			keys[count]=key.
-					replace(DOUBLE_BACKSLASH+PATH_DELIMETER, PATH_DELIMETER).
-					replace(LEFT_BRACKET_ESCAPE,LEFT_BRACKET).
-					replace(RIGHT_BRACKET_ESCAPE,RIGHT_BRACKET);
-			out(keys[count]);
+					replace(DOUBLE_BACKSLASH+PATH_DELIMETER, PATH_DELIMETER);
 			count++;
 		}
 		return keys;
@@ -513,6 +504,10 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		return this;
 	}
 	
+	public void setElement(String value){
+		set(JSQLUtil.formatElementFromString(value));
+	}
+	
 	/* (non-Javadoc)
 	 * @see JsonQuery#jset(java.lang.String)
 	 */
@@ -715,8 +710,8 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 			JsonQueryArray  array = new JsonQueryArray();
 			for (Entry<String, JsonQueryNode> entry : ((JsonQueryObject)element).entrySet()) {
 			    String key = entry.getKey();
-			    Object value = entry.getValue();
-			    JsonQueryNode node = new JsonQueryNode(((JsonQueryNode)value).element,key);
+			    JsonQueryNode node = (JsonQueryNode)entry.getValue();
+			    node.key=key;
 			    array.add(node);
 			}
 			return array;
@@ -734,8 +729,8 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 			ArrayList<Object>  array = new ArrayList<Object>();
 			for (Entry<String, JsonQueryNode> entry : ((JsonQueryObject)element).entrySet()) {
 			    String key = entry.getKey();
-			    Object value = entry.getValue();
-			    JsonQueryNode node = new JsonQueryNode(((JsonQueryNode)value).element,key);
+			    JsonQueryNode node = (JsonQueryNode)entry.getValue();
+			    node.key=key;
 			    array.add(node);
 			}
 			return array;

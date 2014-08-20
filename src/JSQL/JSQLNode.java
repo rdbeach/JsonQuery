@@ -7,6 +7,8 @@ public interface JSQLNode {
 	JSQLNode createNewNode(Object node, String key);
 	
 	Object getElement();
+	
+	void setElement(String element);
 
 	String getKey();
 	
@@ -21,5 +23,7 @@ public interface JSQLNode {
 	JSQLNode getNextNode(int key);
 	
 	ArrayList<Object> getChildNodes();
+	
+	boolean isLeaf();
 
 }
