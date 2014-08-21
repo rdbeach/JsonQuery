@@ -38,6 +38,8 @@ public class JSQLEngine {
 	private static final String CHILD_OPERATOR = ":";
 	private static final String[] SETCLAUSE_OPERATORS = {"="};
 	
+	private boolean allow_duplicates=true;
+	
 	JSQLParser jsqlParser = new JSQLParser();
 	
 	private JSQLExpression evaluator;
@@ -509,6 +511,9 @@ public class JSQLEngine {
 			if(include){
 				for(int i = 0;i<branches_up;i++){
 					node=node.getAntenode();
+				}
+				if(!allow_duplicates){
+					if(resultSet.contains(node))return;
 				}
 				resultSet.add(node);
 			}

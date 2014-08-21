@@ -310,7 +310,6 @@ public class JSQLParser {
 		out("start querySelector:"+queryString);
 		ArrayList<JSQLTokens> queryList = new ArrayList<JSQLTokens>();
 		
-		
 		String[] tokensStr=queryString.split("``(?!`)",-1);
 		
 		StringBuilder str = new StringBuilder("");
