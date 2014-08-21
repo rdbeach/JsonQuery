@@ -3,11 +3,15 @@ package src;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import src.JSQL.JSQLEngine;
 import src.JSQL.JSQLNode;
 import src.JSQL.JSQLResultSet;
+import src.JSQL.JSQLTokenMap;
 import src.JSQL.JSQLUtil;
 
 import com.google.gson.Gson;
@@ -17,12 +21,14 @@ import com.google.gson.internal.LazilyParsedNumber;
 
 public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	
-	private static final String PATH_DELIMETER = ".";
+	private static final String EMPTY = "";
 	
 	private static final String NOT_BACKSLASH = "(?<!\\\\)";
 	private static final String PATH_DELIMETER_REGEX = "[.]";
 	private static final String DOUBLE_BACKSLASH = "\\";
-	
+	private static final String BACKTICK = "`";
+	private static final String DOUBLE_BACKTICK = "``";
+	private static final String PATHQUOTES = "``(?!`)|(?<!\\\\)`";
 	public transient String key = EMPTY;
 	
 	@Override
@@ -130,14 +136,82 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		return path(this,keys,false);
 	}
 	
+	private List<String> fragmentOnQuotedPaths(String path){
+		Pattern pattern = Pattern.compile(PATHQUOTES);
+	    Matcher matcher = pattern.matcher(path);
+	    
+	    List<String> tokens = new ArrayList<String>();
+	    
+	    String lastFragment = "";
+	    int index=0;
+	    int lastIndex=0;
+	    int group=0;
+	    int capture_group=0;
+	    boolean release=false;
+	    
+	    while (matcher.find()) {
+	    	String groupStr = matcher.group(0);
+	    	if(groupStr.equals(DOUBLE_BACKTICK)){
+	    		group=2;
+	    	}else{
+	    		group=4;
+	    	}
+	    	if(!release||group==capture_group){
+		    	index=matcher.start();
+		    	String token = path.substring(lastIndex,index);
+		    	tokens.add(token);
+		    	lastIndex=matcher.end();
+		    	capture_group=group;
+		    	release = !release;
+		    // special case 1 (captured ` found \``)
+	    	}else if(group==2&&capture_group==4){  
+	    		index=matcher.start()+1;
+	    		String token = path.substring(lastIndex,index);
+		    	tokens.add(token);
+		    	lastIndex=index+1;
+		    	release = !release;
+	    	}
+	    }
+	    if(release){
+	    	return null;
+	    }
+	    if(lastIndex<path.length()){
+	    	lastFragment = path.substring(lastIndex,path.length());
+	    }else{
+	    	lastFragment="";
+	    }
+	    tokens.add(lastFragment);
+	    return tokens;
+	}
+	
 	private String[] getKeys(String path){
-		String[] keys = path.
-				split(NOT_BACKSLASH+PATH_DELIMETER_REGEX);
-		int count=0;
+		
+		List<String> tokensList = fragmentOnQuotedPaths(path);
+		Object[] tokensStr=tokensList.toArray();
+		
+		if(tokensStr==null){
+			return new String[]{};
+		}
+		
+		StringBuilder str = new StringBuilder(EMPTY);
+		for (int i = 0; i < tokensStr.length; i+=2) {
+		    str.append((String)tokensStr[i]);
+		    if(i+2<tokensStr.length)
+		    str.append(DOUBLE_BACKTICK);
+		}
+		path=str.toString();
+		String[] keys = path.split(NOT_BACKSLASH+PATH_DELIMETER_REGEX);
+		int replacementCount=1;
+		int i = 0;
 		for(String key:keys){
-			keys[count]=key.
-					replace(DOUBLE_BACKSLASH+PATH_DELIMETER, PATH_DELIMETER);
-			count++;
+			while(key.contains(DOUBLE_BACKTICK)){
+				key = key.replaceFirst(DOUBLE_BACKTICK,((String)tokensStr[replacementCount]).
+						replace("\\", "\\\\").
+						replace("$", "\\$"));
+				replacementCount+=2;
+			}
+			key=key.replace(DOUBLE_BACKSLASH+BACKTICK, BACKTICK);
+			keys[i++]=key;
 		}
 		return keys;
 	}
@@ -852,6 +926,15 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	
 	private void out(Object o){
 		System.out.println(o);
+	}
+	
+	private void listIt(List list,String start,String loopStr){
+		out(start);
+		for (Object elem : list) {
+			out(loopStr+ " "+ elem.toString());
+		}
+		out("---------------------------------");
+		out("");
 	}
 	
 }

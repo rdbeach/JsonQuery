@@ -70,7 +70,7 @@ public class JSQLParser {
 	private static final String DOUBLE_BACKTICK = "``";
 	private static final String DOUBLE_SINGLE_QUOTE = "''";
 	
-	private static final String[] ESCAPE_CHARS = {".","`"};  // separator
+	private static final String[] ESCAPE_CHARS = {"`"};  // separator
 	
 	private static final String[] FORBIDDEN_SEQUENCES = {"::","??",":.",".:","!!",",,"};
 	
@@ -150,9 +150,6 @@ public class JSQLParser {
 	    	if(!release||group==capture_group){
 		    	index=matcher.start();
 		    	String token = queryString.substring(lastIndex,index);
-		    	if(capture_type==0){
-		    		token.replaceAll(DOUBLE_BACKSLASH+"`", "`");
-		    	}
 		    	tokens.tokens.add(token);
 		    	tokens.type.add(capture_type);
 		    	lastIndex=matcher.end();
@@ -161,7 +158,8 @@ public class JSQLParser {
 		    // special case 1 (captured ` found \``) or (captured ' found \'')
 	    	}else if((group==1&&capture_group==3)||(group==2&&capture_group==4)){  
 	    		index=matcher.start()+1;
-	    		tokens.tokens.add(queryString.substring(lastIndex,index));
+	    		String token = queryString.substring(lastIndex,index);
+		    	tokens.tokens.add(token);
 		    	tokens.type.add(capture_type);
 		    	lastIndex=index+1;
 		    	release = !release;
@@ -309,8 +307,24 @@ public class JSQLParser {
 	}
 	
 	public ArrayList<JSQLTokens> parseSelector(String queryString){
-		//out("start getTokens");
+		out("start querySelector:"+queryString);
 		ArrayList<JSQLTokens> queryList = new ArrayList<JSQLTokens>();
+		
+		
+		String[] tokensStr=queryString.split("``(?!`)",-1);
+		
+		StringBuilder str = new StringBuilder("");
+		for (int i = 0; i < tokensStr.length; i+=2) {
+		    str.append(tokensStr[i]);
+		    if(i+2<tokensStr.length)
+		    str.append("``");
+			//out(i+": "+tokenList.get(i));
+		}
+		
+		queryString=str.toString();
+		
+		out("Simplified selector:" + queryString);
+		
 		
 		for(int i = 0;i<FORBIDDEN_SEQUENCES.length;i++){
 			if(queryString.contains(FORBIDDEN_SEQUENCES[i])){
@@ -319,6 +333,7 @@ public class JSQLParser {
 			}
 		}
 		
+		int replacementCount=1;
 		String[] queries = queryString.split(QUERY_SEPARATOR);
 		for(String query:queries){
 			JSQLTokens tokens = new JSQLTokens();
@@ -336,13 +351,16 @@ public class JSQLParser {
 				int k = 0;
 				for(String key:keys){
 					//out("getTokens: key:" +key);
-					if(key.startsWith("``"));
-					key = key.replaceAll("``(?!`)","");
+					while(key.contains("``")){
+						key = key.replaceFirst("``",tokensStr[replacementCount].replace("\\", "\\\\").replace("$", "\\$"));
+						replacementCount+=2;
+					}
 					for(int count=0;count<ESCAPE_CHARS.length;count++){
 						key=key.replace(DOUBLE_BACKSLASH+ESCAPE_CHARS[count], ESCAPE_CHARS[count]); // path
 					}
 					keys[k]=key;
 					k++;
+					out(key);
 				}
 				if(j==0){
 					tokens.path=keys;
