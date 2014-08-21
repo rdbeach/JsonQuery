@@ -5,7 +5,7 @@ A Java based structured query language for JSON.
 
 ## A quick look
 
-***NOTE*** There are no releases as this point because the project is currently in developement. While the single node traversal is pretty much stable, the SQL engine is still in the experimental stages.
+***NOTE*** None of the code in this package is guaranteed to be stable or bug free. The SQL engine, in particular, is still in the experimental stages.
 
 JsonQuery gives you Java tools for consuming, traversing, querying, editing, and producing JSON.
 
@@ -16,15 +16,17 @@ It consists of two parts:
 	2) JSQL queries (JSON Strucured Query Language)
 	
 
-The single node traversal operators allow you to maniputate the JSON tree one node at a time. For instance, a deeply nested JSON field can be extracted in one brief line:
+The single node traversal operators allow you to maniputate the JSON tree one node at a time. For instance, a deeply nested JSON field can be extracted as follows:
 
 **$.get("company.sales.international.reps.bob.commision").val();**
 
-You work with a specific node by indiating its "path".
+As you can see, you create a "path" string to target a particular node.
 
 The JSQL Engine allows you to run SQL style queries on the JSON structure, like this:
 
 **$.jsql("Select * from company:reps.? where commision>5000)**
+
+The query returns a result set, which is a set of matching nodes.
 
 This project does not address binding JSON to Java classes. Instead, the JSON information is encapsulated in a dynamic tree structure. From there, you can do with it whatever you want- write it to a class, save it to a database, or send a JSON response back to your client app after processing a request.
 
