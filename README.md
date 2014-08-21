@@ -1,17 +1,30 @@
 JsonQuery
 =====
 
-A Gson extension that makes manipulating JSON in Java easier.
+A Java based structured query language for JSON.
 
 ## A quick look
 
-***NOTE*** This project is for testing only. It is very much a work in progress.
+***NOTE*** There are no releases as this point because the project is currently in developement. While the single node traversal is pretty much stable, the SQL engine is still in the experimental stages.
 
 JsonQuery gives you Java tools for consuming, traversing, querying, editing, and producing JSON.
 
-For instance, a deeply nested JSON field can be extracted in one brief line:
+It consists of two parts:
 
-**$.get("planets.earth.north_america.california.los_angeles.zip_codes.my_zip_code").val();**
+	1) Single node traversal operators.
+	
+	2) JSQL queries (JSON Strucured Query Language)
+	
+
+The single node traversal operators allow you to maniputate the JSON tree one node at a time. For instance, a deeply nested JSON field can be extracted in one brief line:
+
+**$.get("company.sales.international.reps.bob.commision").val();**
+
+You work with a specific node by indiating its "path".
+
+The JSQL Engine allows you to run SQL style queries on the JSON structure, like this:
+
+**$.jsql("Select * from company:reps.? where commision>5000)**
 
 This project does not address binding JSON to Java classes. Instead, the JSON information is encapsulated in a dynamic tree structure. From there, you can do with it whatever you want- write it to a class, save it to a database, or send a JSON response back to your client app after processing a request.
 
