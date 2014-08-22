@@ -48,7 +48,7 @@ Alternatively, you can edit the JsonQueryTest.java file so that it does not cont
 
 ## Usage
 
-### Part I Single Node Operations
+### Part I: Single Node Operations
 
 #### Here is an example.
 
@@ -80,7 +80,7 @@ Start with a JSON string:
     	}
     		
     		
- String msg will contain the JSON string above. 
+The variable msg will contain the JSON string above. 
  
  
  
@@ -91,7 +91,7 @@ Start with a JSON string:
                 JsonQuery $ = JsonQuery.fromJson(msg);
                 
                     
-                // or recreate JSON string from JsonQuery object using class method
+                // or recreate the JSON string from the JsonQuery object
                 
                 out($.toJson()); // out means System.out.println.
                 
@@ -324,25 +324,7 @@ Start with a JSON string:
         
 
 
-
-
-####Javascript queries (The fun part)
-
-	/**
- 		{
- 	                "data": {
-  	                        "translations": [
-					{
-    	                                	"translatedText": "Hello world"
-					}
-  	                       	]
-                	}
-		}
-        */
-	
- 
-
-####Tree traversal 
+####Tree traversal with "each"
 
 	// Referring again to the first example...
 	
@@ -382,7 +364,7 @@ Start with a JSON string:
 	// 28 years
 
 
-### Part II JSQL Queries 
+### Part II: JSQL Queries 
 
 Comming soon.
 
