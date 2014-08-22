@@ -163,7 +163,7 @@ Start with a JSON string:
 
 
 
-#### Removing stuff. Changing stuff. You get the idea now:
+#### More manipualtion: Removing stuff. Changing stuff. etc.
                     
                 // Actually I don't like swimming
                 $.get("hobbies").remove(2);
@@ -180,7 +180,7 @@ Start with a JSON string:
                 
                 // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":false}
                 
-                // Go deeper in the tree
+                // Add more to the JSON object tree
                 $.get("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
                 
                 out($.get("properties").toJson());
