@@ -11,12 +11,12 @@ JsonQuery gives you Java tools for consuming, traversing, querying, editing, and
 
 It consists of two parts:
 
-	1) Single node traversal operators.
+	1) Single node operations.
 	
 	2) JSQL queries (JSON Strucured Query Language)
 	
 
-The single node traversal operators allow you to maniputate the JSON tree one node at a time. For instance, a deeply nested JSON field can be extracted as follows:
+The single node operators allow you to maniputate the JSON tree one node at a time. For instance, a deeply nested JSON field can be extracted as follows:
 
 **$.get("company.sales.international.reps.bob.commision").val();**
 
@@ -48,14 +48,9 @@ Alternatively, you can edit the JsonQueryTest.java file so that it does not cont
 
 ## Usage
 
-There are two ways to manipulate the json tree using JsonQuery.
+### Part I Single Node Operations
 
-	- Single node traversal
-	- Javascript queries.
-	
-	
-
-#### We will begin with single node traversal. Here is an example.
+#### Here is an example.
 
 Start with a JSON string:
 
@@ -110,19 +105,19 @@ Start with a JSON string:
 #### Retrieve some properties from the newly created object:
                     
                 // Whats my city? (str gets a string)
-                out($.get("address").str("city"));
+                out($.get("address.city").str());
                 
                 // Pasadena
                 
                 //You can also use "val", but this returns Object, so you must cast to the type you want
-                String city = (String) $.get("address").val("city");
+                String city = (String) $.get("address.city").val();
                 
                 out(city);
                 
                 // Pasadena
                 
                 // Whats my phone # (i gets an integer)
-                out($.get("phoneNumbers").i(1));
+                out($.get("phoneNumbers.1").i());
                 
                 // 9876543
 
@@ -233,14 +228,76 @@ Start with a JSON string:
                 */
                 
                 
-Grab the "translatedText" value like this:
+		Grab the "translatedText" value like this:
 
                 JsonQuery $ = JsonQuery.fromJson(msg);
-                out($.get("data").get("translations").get(0).str("translatedText"));
+                out($.get("data.translations.0.translatedText").val());
                 
                 // Hello world
                 
                 
+                // You can set a value like this
+        
+		 $.get("data.translations.0.translatedText").set("Bonjour");
+        
+        		
+         
+        	// Str gets the value of the node as a string (regardless of type)
+        
+        	out(
+        		$.get("data.translations.0.translatedText").str()
+        	);
+        
+        	// Bonjour
+        		
+        		
+        
+        	// Sets the first position in the translations array to "Bonjour"
+        
+        	$.get("data.translations.0").add("Bonjour");
+                
+                // Adds a Json Object to the first position in the translations array.
+                
+        
+	        $.get("data.translations").jadd(0,"{\"french\":\"Bonjour\",\"english\":\"hello\"}");
+	        
+	        out(
+	        	$.get("data.translations").toJson()
+	        );
+	        
+	       // [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]
+	       
+	       // Instead of "get", you can use "node". If get cannot find a node in the tree, it simply returns without
+	       // doing anything. Node, on the other hand, will first attempt to find the node, and, if it can't find 
+	       // it, it will then attempt to create it:
+	       
+	       $.node("data.NEW_NODE").set("this is a new node");  //creates a new node
+	       
+	       // One rule that has been put in place is disallowing arbitrary type conversions. In other words, if a node
+	       // has its type set to Array, it can only be converted to another type, such as object, by calling 
+	       // set(Object value) on that node, or by first calling toNull() on the node, and then changing it.
+	       
+	       // The node operator will not attempt type conversion, so that if it encounters a type inconsistency, 
+	       // such as applying an array method to an object node, it will fail and return null. So this won't work:
+	       
+	       
+		$.node("data.translations.NEW_NODE").set("this is a new node");  //fails and returns null
+		
+		// This fails because translations is an array, and it is being referred to as an object in the javascript
+		// query
+		
+		// This will work:
+		
+		$.node("data.translations.0.NEW_NODE").set("this is a new node");
+		
+		//So will this
+		
+		
+		$.node("data.translations.10.NEW_NODE").set("this is a new node");
+		
+		
+		// In this case, if the index is higher than the size of the array, null values will be inserted in the
+		// array up to the index of the inserted value.
 
 
 
@@ -283,91 +340,7 @@ Grab the "translatedText" value like this:
 		}
         */
 	
-                
-        // Here are some examples of javascript queries (using the get method)
-        
-        
-        // This one does the same thing as the single node query above.
-        // "val" gets the value of the node as an object
-        
-        out(
-        	$.get("data.translations[0].translatedText").val()
-        );
-        
-        // Hello World
-        
-        
-        
-        // You can set a value like this
-        
-        $.get("data.translations[0].translatedText").set("Bonjour");
-        
-        		
-         
-        // Str gets the value of the node as a string (regardless of type)
-        
-        out(
-        	$.get("data.translations[0].translatedText").str()
-        );
-        
-        // Bonjour
-        		
-        		
-        
-        // Sets the first position in the translations array to "Bonjour"
-        
-        $.get("data.translations").add(0,"Bonjour");
-        
-        
-        
-        // Adds a Json Object to the first position in the translations array.
-        
-        $.get("data.translations").jadd(0,"{\"french\":\"Bonjour\",\"english\":\"hello\"}");
-        
-        out(
-        	$.get("data.translations").toJson()
-        );
-        
-       // [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]
-       
-       // Instead of "get", you can use "node". If get cannot find a node in the tree, it simply returns without
-       // doing anything. Node, on the other hand, will first attempt to find the node, and, if it can't find 
-       // it, it will then attempt to create it:
-       
-       $.node("data.NEW_NODE").set("this is a new node");  //creates a new node
-       
-       // One rule that has been put in place is disallowing arbitrary type conversions. In other words, if a node
-       // has its type set to Array, it can only be converted to another type, such as object, by calling 
-       // set(Object value) on that node, or by first calling toNull() on the node, and then changing it.
-       
-       // The node operator will not attempt type conversion, so that if it encounters a type inconsistency, 
-       // such as applying an array method to an object node, it will fail and return null. So this won't work:
-       
-       
-	$.node("data.translations.NEW_NODE").set("this is a new node");  //fails and returns null
-	
-	// This fails because translations is an array, and it is being referred to as an object in the javascript
-	// query
-	
-	// This will work:
-	
-	$.node("data.translations[0].NEW_NODE").set("this is a new node");
-	
-	//So will this
-	
-	
-	$.node("data.translations[10].NEW_NODE").set("this is a new node");
-	
-	
-	// In this case, if the index is higher than the size of the array, null values will be inserted in the
-	// array up to the index of the inserted value.
-	
-                
-
-
-
-
-
+ 
 
 ####Tree traversal 
 
@@ -409,7 +382,9 @@ Grab the "translatedText" value like this:
 	// 28 years
 
 
+### Part II JSQL Queries 
 
+Comming soon.
 
 ## API
 
