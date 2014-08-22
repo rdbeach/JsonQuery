@@ -38,7 +38,9 @@ public class JSQLEngine {
 	private static final String CHILD_OPERATOR = ":";
 	private static final String[] SETCLAUSE_OPERATORS = {"="};
 	
-	private boolean allow_duplicates=true;
+	private static final int SELECTOR = 1;
+	
+	private boolean allow_duplicates=false;
 	
 	JSQLParser jsqlParser = new JSQLParser();
 	
@@ -152,6 +154,9 @@ public class JSQLEngine {
 			
 			// get the selectors
 			List<String> expressions = jsqlParser.parseSelectClause(selectClause);
+			if(expressions==null){
+				return;
+			}
 			List<JSQLTokenMap<Integer,Object>> variableMaps = new ArrayList<JSQLTokenMap<Integer,Object>>();
 			List<Boolean> isExpressionList = new ArrayList<Boolean>();
 			List<List<String>> tokensList = new ArrayList<List<String>>();
@@ -199,7 +204,7 @@ public class JSQLEngine {
 						List<Object> valsList = new ArrayList<Object>();
 						int j=0;
 						for(Object variable:variableMap.tokens){
-							if(variableMap.type.get(j)==0){
+							if(variableMap.type.get(j)==SELECTOR){
 								JSQLResultSet<JSQLNode> resultSet = (JSQLResultSet<JSQLNode>)execute(node,"Select * From "+variable+"");
 								out2("Exec Selectlause: Got resultset");
 								if(!resultSet.isEmpty()){
@@ -236,8 +241,7 @@ public class JSQLEngine {
 			
 			JSQLTokenMap<Integer,Object> variableMap = jsqlParser.parseExpression(whereClause,evaluator);
 			
-			
-			
+
 			if(variableMap==null)return;
 			
 			listIt(variableMap.tokens,"List of variable values","value: ");
@@ -253,7 +257,7 @@ public class JSQLEngine {
 				List<Object> valsList = new ArrayList<Object>();
 				int i=0;
 				for(Object variable:variableMap.tokens){
-					if(variableMap.type.get(i)==0){
+					if(variableMap.type.get(i)==SELECTOR){
 						JSQLResultSet<JSQLNode> resultSet = (JSQLResultSet<JSQLNode>)execute(node,"Select * From "+variable+"");
 						out2("Exec WhereClause: Got resultset");
 						if(!resultSet.isEmpty()){
@@ -292,7 +296,7 @@ public class JSQLEngine {
 				JSQLResultSet<JSQLNode> selectResultSet){
 			if(!pass)return false;
 			out2("iterateResultSets: variable iteration "+i);
-			if(variableMap.type.get(i)==0){ // Path
+			if(variableMap.type.get(i)==SELECTOR){ // Path
 				out2("variable name: " + variableMap.tokens.get(i));
 				JSQLResultSet<JSQLNode> resultSet=subsetList.get(i);
 				out2("Pulling resultset");
@@ -446,7 +450,7 @@ public class JSQLEngine {
 					child=true;
 					break;
 				}else{
-					searchPath.add(tokens.path[index]);
+					searchPath.add(jsqlParser.unescape(tokens.path[index]));
 				}
 			}
 			if(!searchPath.isEmpty()){

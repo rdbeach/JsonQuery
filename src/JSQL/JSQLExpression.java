@@ -61,6 +61,10 @@ public class JSQLExpression {
 	 */
 	public static final BigDecimal PI = new BigDecimal(
 			"3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679");
+	
+	public static final int PATH = 1;
+	public static final int NUMERIC = 2;
+	
 	/**
 	 * The {@link MathContext} to use for calculations.
 	 */
@@ -612,7 +616,7 @@ public class JSQLExpression {
 		addFunction(new Function("LOG", 1) {
 			@Override
 			public BigDecimal eval(List<Token<?>> parameters) {
-				double d = Math.log(parameters.get(0).dec().doubleValue());
+				double d = Math.log10(parameters.get(0).dec().doubleValue());
 				return new BigDecimal(d, mc);
 			}
 		});
@@ -915,13 +919,13 @@ public class JSQLExpression {
 	private void putByType(JSQLTokenMap<Integer,Object> variablesMap, String variable){
 		if(isNumber(variable)){
 			variablesMap.tokens.add(new BigDecimal(variable));
-			variablesMap.type.add(2); // Numeric
+			variablesMap.type.add(NUMERIC); // Numeric
 		}else if(variable.equalsIgnoreCase("true")||variable.equalsIgnoreCase("false")){
 			variablesMap.tokens.add(new Boolean(variable));
-			variablesMap.type.add(2); // Numeric
+			variablesMap.type.add(NUMERIC); // Numeric
 		}else{
 			variablesMap.tokens.add(variable);
-			variablesMap.type.add(0); // Path
+			variablesMap.type.add(PATH); // Path
 		}
 	}
 	

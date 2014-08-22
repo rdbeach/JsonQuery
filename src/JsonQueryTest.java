@@ -2,7 +2,10 @@ package src;
 import java.io.IOException;
 import org.adrianwalker.multilinestring.Multiline;
 
-
+/*
+ * JsonQueryTest 
+ * A test file for JsonQuery's single node traversal functions.
+ */
 
 public class JsonQueryTest {
 	/**

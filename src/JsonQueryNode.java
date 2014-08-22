@@ -23,12 +23,16 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	
 	private static final String EMPTY = "";
 	
-	private static final String NOT_BACKSLASH = "(?<!\\\\)";
-	private static final String PATH_DELIMETER_REGEX = "[.]";
+	private static final String PATH_DELIMITER_REGEX = "(?<!\\\\)[.]";
 	private static final String DOUBLE_BACKSLASH = "\\";
+	private static final String QUADRUPLE_BACKSLASH = "\\\\";
+	private static final String DOLLARSIGN = "$";
+	private static final String DOLLARSIGN_BACKSLASH = "\\$";
 	private static final String BACKTICK = "`";
+	private static final String DOUBLE_BACKSLASH_BACKTICK = "\\`";
 	private static final String DOUBLE_BACKTICK = "``";
-	private static final String PATHQUOTES = "``(?!`)|(?<!\\\\)`";
+	private static final String KEYQUOTES = "``(?!`)|(?<!\\\\)`";
+	private static final String KEY_PLACEHOLDER = "``";
 	public transient String key = EMPTY;
 	
 	@Override
@@ -136,49 +140,49 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		return path(this,keys,false);
 	}
 	
-	private List<String> fragmentOnQuotedPaths(String path){
-		Pattern pattern = Pattern.compile(PATHQUOTES);
+	private List<String> fragmentOnQuotedKeys(String path){
+		Pattern pattern = Pattern.compile(KEYQUOTES);
 	    Matcher matcher = pattern.matcher(path);
 	    
 	    List<String> tokens = new ArrayList<String>();
 	    
-	    String lastFragment = "";
+	    String lastFragment = EMPTY;
 	    int index=0;
 	    int lastIndex=0;
 	    int group=0;
 	    int capture_group=0;
-	    boolean release=false;
+	    boolean someGroupIsCaptured=false;
 	    
 	    while (matcher.find()) {
 	    	String groupStr = matcher.group(0);
 	    	if(groupStr.equals(DOUBLE_BACKTICK)){
-	    		group=2;
+	    		group=1;
 	    	}else{
-	    		group=4;
+	    		group=2;
 	    	}
-	    	if(!release||group==capture_group){
+	    	if(!someGroupIsCaptured||group==capture_group){
 		    	index=matcher.start();
 		    	String token = path.substring(lastIndex,index);
 		    	tokens.add(token);
 		    	lastIndex=matcher.end();
 		    	capture_group=group;
-		    	release = !release;
+		    	someGroupIsCaptured = !someGroupIsCaptured;
 		    // special case 1 (captured ` found \``)
-	    	}else if(group==2&&capture_group==4){  
+	    	}else if(group==1&&capture_group==2){  
 	    		index=matcher.start()+1;
 	    		String token = path.substring(lastIndex,index);
 		    	tokens.add(token);
 		    	lastIndex=index+1;
-		    	release = !release;
+		    	someGroupIsCaptured = !someGroupIsCaptured;
 	    	}
 	    }
-	    if(release){
+	    if(someGroupIsCaptured){
 	    	return null;
 	    }
 	    if(lastIndex<path.length()){
 	    	lastFragment = path.substring(lastIndex,path.length());
 	    }else{
-	    	lastFragment="";
+	    	lastFragment=EMPTY;
 	    }
 	    tokens.add(lastFragment);
 	    return tokens;
@@ -186,7 +190,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	
 	private String[] getKeys(String path){
 		
-		List<String> tokensList = fragmentOnQuotedPaths(path);
+		List<String> tokensList = fragmentOnQuotedKeys(path);
 		Object[] tokensStr=tokensList.toArray();
 		
 		if(tokensStr==null){
@@ -197,20 +201,21 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		for (int i = 0; i < tokensStr.length; i+=2) {
 		    str.append((String)tokensStr[i]);
 		    if(i+2<tokensStr.length)
-		    str.append(DOUBLE_BACKTICK);
+		    str.append(KEY_PLACEHOLDER);
 		}
 		path=str.toString();
-		String[] keys = path.split(NOT_BACKSLASH+PATH_DELIMETER_REGEX);
+		
+		String[] keys = path.split(PATH_DELIMITER_REGEX);
 		int replacementCount=1;
 		int i = 0;
 		for(String key:keys){
-			while(key.contains(DOUBLE_BACKTICK)){
-				key = key.replaceFirst(DOUBLE_BACKTICK,((String)tokensStr[replacementCount]).
-						replace("\\", "\\\\").
-						replace("$", "\\$"));
+			while(key.contains(KEY_PLACEHOLDER)){
+				key = key.replaceFirst(KEY_PLACEHOLDER,((String)tokensStr[replacementCount]).
+						replace(DOUBLE_BACKSLASH, QUADRUPLE_BACKSLASH).
+						replace(DOLLARSIGN, DOLLARSIGN_BACKSLASH));
 				replacementCount+=2;
 			}
-			key=key.replace(DOUBLE_BACKSLASH+BACKTICK, BACKTICK);
+			key=key.replace(DOUBLE_BACKSLASH_BACKTICK, BACKTICK);
 			keys[i++]=key;
 		}
 		return keys;
