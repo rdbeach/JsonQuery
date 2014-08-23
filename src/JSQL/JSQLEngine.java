@@ -35,7 +35,7 @@ public class JSQLEngine {
 	private static final String EMPTY = "";
 	private static final String ALL_OPERATOR = "*";
 	private static final String ANY_OPERATOR = "?";
-	private static final String CHILD_OPERATOR = ":";
+	private static final String DESCENDENT_OPERATOR = ":";
 	private static final String[] SETCLAUSE_OPERATORS = {"="};
 	
 	private static final int SELECTOR = 1;
@@ -105,7 +105,7 @@ public class JSQLEngine {
 			if(clauses.containsKey(SELECT)){
 				String selectClause=clauses.get(SELECT);
 				if(selectClause.equals(ALL_OPERATOR)){
-					selectResultSet=fromResultSet;
+						selectResultSet=fromResultSet;
 				}else{
 					//ArrayList<JSQLTokens> queries = jsqlParser.parseSelector(selectClause);
 					//for(JSQLNode subNode: (JSQLResultSet<JSQLNode>)fromResultSet){
@@ -205,7 +205,8 @@ public class JSQLEngine {
 						int j=0;
 						for(Object variable:variableMap.tokens){
 							if(variableMap.type.get(j)==SELECTOR){
-								JSQLResultSet<JSQLNode> resultSet = (JSQLResultSet<JSQLNode>)execute(node,"Select * From "+variable+"");
+								JSQLResultSet<JSQLNode> resultSet = new JSQLResultSet<JSQLNode>();
+								executeJSQLClause(node, resultSet,jsqlParser.parseSelector((String)variable));
 								out2("Exec Selectlause: Got resultset");
 								if(!resultSet.isEmpty()){
 									pass=true;
@@ -258,7 +259,8 @@ public class JSQLEngine {
 				int i=0;
 				for(Object variable:variableMap.tokens){
 					if(variableMap.type.get(i)==SELECTOR){
-						JSQLResultSet<JSQLNode> resultSet = (JSQLResultSet<JSQLNode>)execute(node,"Select * From "+variable+"");
+						JSQLResultSet<JSQLNode> resultSet = new JSQLResultSet<JSQLNode>();
+						executeJSQLClause(node, resultSet,jsqlParser.parseSelector((String)variable));
 						out2("Exec WhereClause: Got resultset");
 						if(!resultSet.isEmpty()){
 							pass=true;
@@ -446,7 +448,7 @@ public class JSQLEngine {
 				if(tokens.path[index].equals(ANY_OPERATOR)){
 					next = true;
 					break;
-				}else if(tokens.path[index].equals(CHILD_OPERATOR)){
+				}else if(tokens.path[index].equals(DESCENDENT_OPERATOR)){
 					child=true;
 					break;
 				}else{
@@ -659,7 +661,7 @@ public class JSQLEngine {
 								break;
 							}
 							
-						}else if(exceptions[index].equals(CHILD_OPERATOR)){
+						}else if(exceptions[index].equals(DESCENDENT_OPERATOR)){
 							
 							// If its the last token, then cntx.match is true
 							// If it is followed by another token

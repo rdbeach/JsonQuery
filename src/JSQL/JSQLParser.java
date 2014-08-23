@@ -12,6 +12,8 @@ public class JSQLParser {
 	
 	private static final String KEYWORD_REGEX = "(?<!\\\\)\\(|(?<!\\S)select|from|where|order by|limit(?!\\S)";
 	private static final String QUOTATIONS = "``(?!`)|''(?!')|(?<!\\\\)`|(?<!\\\\)'";
+	private static final String BRACKETS = "\\[|]";
+	private static final String BRACKETS_REGEX = "\\[]";
 	private static final String PLACEHOLDER_REGEX = "``(?!`)";
 	private static final String PATHQUOTES = "``(?!`)";
 	private static final String EXPRESSIONQUOTES  = "``(?!`)|(?<!\\\\)\\[|(?<!\\\\)]|''(?!')";
@@ -66,7 +68,7 @@ public class JSQLParser {
 	
 	private static final String SELECTOR_LEFT_BRACKET = "[";
 	private static final String SELECTOR_RIGHT_BRACKET = "]";
-	
+	private static final String BRACKETS_PLACEHOLDER = "[]";
 	
 	private static final String KEY_PLACEHOLDER = "``";
 	private static final String EKY_PLACEHOLDER2 = "```";
@@ -140,6 +142,12 @@ public class JSQLParser {
 		        	err("Jsql syntax error. Invalid keyword placement: " + key);
 		        	return -1;
 		        }
+		        // Check for where with no from in select query
+		        out(kw[0]+" " + precedence + " " +new_precedence);
+		        if(SELECT.equals((String)keywords[0][0])&&precedence==0&&new_precedence==2){
+		        	err("Jsql syntax error. WHERE without FROM.");
+		        	return -1;
+		        }
 		        precedence=new_precedence;
 		        found = true;
 		        break;
@@ -152,7 +160,7 @@ public class JSQLParser {
 		return precedence;
 	}
 	
-	private JSQLTokenMap<Integer,String> fragmentOnQuotedTokens(String queryString){
+	private JSQLTokenMap<Integer,String> splitOnQuotes(String queryString){
 		Pattern pattern = Pattern.compile(QUOTATIONS);
 	    Matcher matcher = pattern.matcher(queryString);
 	     
@@ -258,9 +266,56 @@ public class JSQLParser {
 	    tokenMap.tokens.add(clause);
 	    tokenMap.type.add(0);
 	 
-	    listIt(tokenMap.tokens,"Parse out delimeters: \n----------------------------- ", "token: ");
-	    listIt(tokenMap.type,"Parse out delimeters: \n----------------------------", "Token type: ");
+	    listIt(tokenMap.tokens,"Parse out ` ' delimeters: \n----------------------------- ", "token: ");
+	    listIt(tokenMap.type,"Parse out ` ' delimeters: \n----------------------------", "Token type: ");
 		return tokenMap;
+	}
+	
+	private List<String> splitOnBrackets(String queryString){
+		Pattern pattern = Pattern.compile(BRACKETS);
+	    Matcher matcher = pattern.matcher(queryString);
+	     
+	    List<String> tokenList = new ArrayList<String>();
+	    
+	    Stack<String> stack = new Stack<String>();
+	    int lastIndex=0;
+	    String clause = EMPTY;
+	    String groupStr = "";
+	    
+	    // matching []
+	    
+	    out("Parsing the expression:\n");
+	    while (matcher.find()) {
+	    	
+	    	groupStr = matcher.group(0);
+	    	out("Captured: " + groupStr + " at index: " + matcher.start());
+	    	
+	    	if(groupStr.equals(SELECTOR_LEFT_BRACKET)){
+	    			stack.push(SELECTOR_LEFT_BRACKET);
+    				tokenList.add(queryString.substring(lastIndex,matcher.start()));
+			    	lastIndex=matcher.end();
+		    	
+		    }else if(groupStr.equals(SELECTOR_RIGHT_BRACKET)){
+		    		stack.pop();
+    				tokenList.add(queryString.substring(lastIndex,matcher.start()));
+			    	lastIndex=matcher.end();
+	    	}
+	    }
+	    
+	    if(!stack.isEmpty()){
+	    	err("Jsql syntax error. delimeter missing");
+	    	return null;
+	    }
+	    
+	    if(lastIndex<queryString.length()){
+	    	clause = queryString.substring(lastIndex,queryString.length());
+	    }else{
+	    	clause=EMPTY;
+	    }
+	    tokenList.add(clause);
+	 
+	    listIt(tokenList,"Parse out [] delimeters: \n----------------------------- ", "token: ");
+	    return tokenList;
 	}
 	
 	private String quotes(int i , JSQLTokenMap<Integer,String> queryStringMap){
@@ -273,17 +328,21 @@ public class JSQLParser {
 	
 	public HashMap<String,String> parseQueryString(String queryString){
 		out("Parse queryString:" + queryString+"\n");
-		// Split string on double single backtick/quote
-		JSQLTokenMap<Integer,String> queryStringMap = fragmentOnQuotedTokens(queryString);
+		
+		// Splice out parts in back ticks and single quotes
+		
+		JSQLTokenMap<Integer,String> queryStringMap = splitOnQuotes(queryString);
 		
 		List<String> tokenList = queryStringMap.tokens;
 		
 		if(tokenList==null)return null;
 		
-		// Get the command strucure based on the first keyword
+		// Get the command structure based on the first keyword
+		
 		Object[][] keywords = getJsqlCommandStructure(tokenList.get(0).trim().toLowerCase());
 		
 		// querystring must start with an acceptable verb
+		
 		if(keywords==null){
 			err("Jsql syntax error. Invalid verb: " + tokenList.get(0).trim());
 			return null;
@@ -298,6 +357,22 @@ public class JSQLParser {
 		    str.append(tokens[i]);
 		    if(i+2<tokens.length)
 		    str.append(KEY_PLACEHOLDER);
+			//out(i+": "+tokenList.get(i));
+		}
+		
+		// Splice out bracketed parts
+		
+		List<String>tokenList2 = splitOnBrackets(str.toString());
+		
+		// reassemble
+		
+		tokens=tokenList2.toArray(new String[tokenList.size()]);
+		
+		str = new StringBuilder(EMPTY);
+		for (int i = 0; i < tokens.length; i+=2) {
+		    str.append(tokens[i]);
+		    if(i+2<tokens.length)
+		    str.append(BRACKETS_PLACEHOLDER);
 			//out(i+": "+tokenList.get(i));
 		}
 		
@@ -353,9 +428,42 @@ public class JSQLParser {
 	    	err("You have an error in your JSQL syntax near "+lastKey);
 	    	return null;
 	    }
+	    
+	    // Reinsert the bracketed text
+		
+ 		int i = 1;
+ 		for (Entry<String, String> entry : tokenMap.entrySet()) {
+	    	
+    		clause = entry.getValue();
+     		
+     		pattern = Pattern.compile(BRACKETS_REGEX);
+     	    matcher = pattern.matcher(clause);
+     	    StringBuilder newClause = new StringBuilder(EMPTY);
+     	    int index = 0;
+     	    while (matcher.find()) {
+     	    	index = matcher.end();
+     	    	StringBuilder replacement = new StringBuilder();
+     	    	replacement.append(SELECTOR_LEFT_BRACKET);
+     	    	replacement.append(tokenList2.get(i).
+     	    			replace(DOUBLE_BACKSLASH, QUADRUPLE_BACKSLASH).
+ 						replace(DOLLARSIGN, DOLLARSIGN_BACKSLASH));
+     	    	replacement.append(SELECTOR_RIGHT_BRACKET);
+     	    	newClause.append(matcher.replaceFirst(replacement.toString()).
+     	    			substring(0,index+tokenList2.get(i).length()));
+     	    	clause = clause.substring(index);
+     	    	matcher = pattern.matcher(clause);
+     	    	i+=2;
+     	    }
+ 	    	
+ 	        //out(entry.getKey());
+ 	        newClause.append(clause);
+ 	       // out(newClause);
+ 	        tokenMap.put(entry.getKey(), newClause.toString());
+ 	    }
+	    
 		// Reinsert the quoted text
 		
-		int i = 1;
+		i = 1;
 	    for (Entry<String, String> entry : tokenMap.entrySet()) {
 	    	
     		clause = entry.getValue();
@@ -384,18 +492,14 @@ public class JSQLParser {
 	       // out(newClause);
 	        tokenMap.put(entry.getKey(), newClause.toString());
 	    }
-		out("Finished parsing query.");
-		out(EMPTY);
-		//if(1==1)return null;
+	    
+		out("Finished parsing query.\n");
+
 		return tokenMap;
 	}
 	
 	public ArrayList<JSQLTokens> parseSelector(String selector){
 		out("start querySelector:"+selector);
-		
-		if(selector.startsWith("[")){
-			selector = selector.substring(1, selector.length()-1);
-		}
 		
 		ArrayList<JSQLTokens> queryList = new ArrayList<JSQLTokens>();
 		
@@ -426,10 +530,16 @@ public class JSQLParser {
 		}
 		
 		int replacementCount=1;
-		String[] queries = selector.split(SELECTOR_DELIMITER);
-		for(String query:queries){
+		String[] path_selectors = selector.split(SELECTOR_DELIMITER);
+		for(String path_selector:path_selectors){
+			if(path_selector.startsWith(SELECTOR_LEFT_BRACKET)){
+				path_selector = path_selector.substring(1, path_selector.length());
+			}
+			if(path_selector.endsWith(SELECTOR_RIGHT_BRACKET)){
+				path_selector = path_selector.substring(0, path_selector.length()-1);
+			}
 			JSQLTokens tokens = new JSQLTokens();
-			String[] paths = query.split(NOT_OPERATOR);
+			String[] paths = path_selector.split(NOT_OPERATOR);
 			int j = 0;
 			for(String path:paths){
 				out("getTokens: path:" +path);
@@ -449,7 +559,6 @@ public class JSQLParser {
 								replace(DOLLARSIGN, DOLLARSIGN_BACKSLASH)+KEY_QUOTE);
 						replacementCount+=2;
 					}
-					out("here");
 					keys[k]=key;
 					k++;
 					out(key);
