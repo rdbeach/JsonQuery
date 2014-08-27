@@ -594,6 +594,35 @@ Brief description of the methods. Will make this more detailed later, as this co
                 
 		Inherited Methods: JsonQueryObject extends HashMap, and JsonQueryArray extends ArrayList.
 
+## Syntax
+
+Path keys must escape the backtick (`) character as follows: \\`
+
+If a path key contains a period, it must by surrounded by backticks:   $.get("path.to.`Mr. Johnson's house`");
+
+If a path ends in a backtick, or in a backslash, it must by surrounded by double backticks:   
+
+$.get("windows.path.``C:\\``");
+
+If you want to create a path key with a number value, like "2", as opposed to an array with an index of 2, you must surround the key in backticks.
+
+$.node("a.b.0");  // makes
+
+"a":{
+	"b":[
+		{}
+	]
+}
+
+$.node("a.b.`0`"); // makes
+
+"a":{
+	"b":{
+		"0":{}
+	}
+}
+
+
 
 
 ## Additional Info
