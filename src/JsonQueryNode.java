@@ -731,9 +731,10 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 			return this;
 		}
 		JsonQueryNode anode = node.antenode;
+
 		if(anode.element instanceof JsonQueryObject){
 			if(((JsonQueryObject)anode.element).containsValue(node)){
-				((JsonQueryObject)anode.element).remove(node);
+				((JsonQueryObject)anode.element).remove(node.key);
 			}
 		}
 		if(anode.element instanceof JsonQueryArray){
