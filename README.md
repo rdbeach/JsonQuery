@@ -171,6 +171,10 @@ The variable msg will contain the JSON string above.
         // Change my city like this: (If set cannot find the path to city, it will do nothing)
         
         $.set("address.city","san fran");
+        
+        // or like this: (Like set, if get cannot find the path, it simply returns)
+        
+        $.get("address.city").set("san fran");
          
         // or like this: (If put cannot find the path to city, it will create it and set the value)
         
@@ -180,15 +184,23 @@ The variable msg will contain the JSON string above.
         
         $.node("address.city").set("san fran");
         
-        
-                
         // Print new address in json format
         
         out($.toJson("address"));
                 
         // {"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"}
+        
+        
+        // If you wish to add a bunch of things to address, you probably should "get" the address key first, and then make your additions:
+        
+        
+        $.get("address").put("city","las vegas").put("city2","new york").put("city3","chicago")...
+        
                 
-        // Update phone numbers
+        
+        
+                
+        // Update phone numbers: Use "add" to add to an array, or "set" to change existing values.
         
         JsonQuery phoneNumbers = $.get("phoneNumbers");
         phoneNumbers.add(0,5555555);
