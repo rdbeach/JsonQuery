@@ -45,6 +45,27 @@ public class JsonQueryTest {
 	
 	/**
 	{
+	    "notification": {
+	        "message": "test",
+	        "sound": "sounds/alarmsound.wav",
+	        "target": {
+	            "apps": [
+	                {
+	                    "id": "app_id",
+	                    "platforms": [
+	                        "ios"
+	                    ]
+	                }
+	            ]
+	        }
+	    },
+	    "access_token": "access_token"
+	}
+	*/
+	@Multiline private static String msg3;
+	
+	/**
+	{
 		"cat":"Mr Happy",
 		"dog":"Wiggles"
 	}
@@ -78,28 +99,52 @@ public class JsonQueryTest {
 			
 			out($.i("phoneNumbers.1"));
 			
-			$.put("address.kill",$.obj().
-					put("name","phonix").
-					put("last name","river").
-					put("middle name","stupid")
-				 );
+			$.node("address.kill").add(1);
 			
 			//$.node("address.city.los angeles");
 			
 			JsonQuery address = $.get("address");
 			
-			address.put(
-					"region",$.obj().
-						put("fishing", "trout").
-						put("hiking",$.obj().
-							put("hi","low").
-							put("bool",false).
-							put("times",$.arr().
-									add(11).
-									add(12)
-								)
-							)
-						);
+			
+			/**
+			{
+			    "notification": {
+			        "message": "test",
+			        "sound": "sounds/alarmsound.wav",
+			        "target": {
+			            "apps": [
+			                {
+			                    "id": "app_id",
+			                    "platforms": [
+			                        "ios"
+			                    ]
+			                }
+			            ]
+			        }
+			    },
+			    "access_token": "access_token"
+			}
+			*/
+			
+			$.node("notification").
+				put("message","test").
+				put("sound","sounds/ararmsound.wav").
+				node("target").
+					node("apps").
+						node("0").
+							put("id","app_id").
+							node("platforms").
+								add("ios");
+			$.put("access_token", "access_token");
+			
+			address.node("region").
+				put("fishing", "trout").
+				node("hiking").
+					put("hi","low").
+					put("bool",false).
+					node("times").
+						add(11).
+						add(12);
 			
 			address.node("personal").
 				put("name", "bob")

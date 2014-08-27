@@ -96,7 +96,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	 */
 	@Override
 	public JsonQueryNode obj(){
-		return new JsonQueryNode(new JsonQueryObject());
+		return new JsonQueryNode(new JsonQueryObject(),"");
 	}
 	
 	// create an array
@@ -105,7 +105,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	 */
 	@Override
 	public JsonQueryNode arr(){
-		return new JsonQueryNode(new JsonQueryArray());
+		return new JsonQueryNode(new JsonQueryArray(),"");
 	}
 
 	// Node Traversal
@@ -322,9 +322,11 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 							if(node.element==null){
 								node.element = new JsonQueryObject();
 							}else{
+								out(1);
 								return new JsonQueryNode(null,null);
 							}
 						}
+						out(keys[i].str());
 						((JsonQueryObject) node.element).put(keys[i].str(),nextNode);
 						if(i+1<keys.length){
 							if(!(keys[i+1].type.equals("String"))){
@@ -337,6 +339,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 					node=nextNode;
 				}
 			}
+			out(node.element);
 			return node;
 		}catch(Throwable e){
 			handleException(e);
