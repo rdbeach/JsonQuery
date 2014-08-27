@@ -44,13 +44,13 @@ The single node operators allow you to maniputate the JSON tree one node at a ti
 	
 can be extracted as follows:
 
-	**$.val("company.sales.international.reps.0.name");**
+	$.val("company.sales.international.reps.0.name");
 
 	// bob
 
 or updated like this:
 
-	**$.set("company.sales.international.reps.0.monthly commission",6000);**
+	$.set("company.sales.international.reps.0.monthly commission",6000);
 
 
 
@@ -60,7 +60,7 @@ As you can see, you create a "path" string to target a particular node.
 
 The JSQL Engine allows you to run SQL style queries on the JSON structure, like this:
 
-	**$.jsql("Select name from company:reps.? where monthly commision>5000)**
+	$.jsql("Select name from company:reps.? where monthly commision>5000)
 	
 	// The result set would return stu
 
