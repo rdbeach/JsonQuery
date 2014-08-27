@@ -122,7 +122,7 @@ The variable msg will contain the JSON string above.
  
  
  
-#### Next, convert the JSON string to a JsonQuery object. 
+#### Convert the JSON string to a JsonQuery object. 
  
         // create JsonQuery object 
                 
