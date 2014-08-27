@@ -93,28 +93,28 @@ Alternatively, you can edit the JsonQueryTest.java file so that it does not cont
 Start with a JSON string:
 
         {
-    	  "empID": 100,
-    	  "name": "Robert",
-    	  "permanent": false,
-    	  "address": {
-    	    "street": "Foolhill Blvd",
-    	    "city": "Pasadena",
-    	    "zipcode": 91011
-    	  },
-    	  "phoneNumbers": [
-    	    1234567,
-    	    9876543
-    	  ],
-    	  "role": "Java Developer",
-    	  "employed":true,
-    	  "cities": [
-    	    "Los Angeles",
-    	    "New York"
-    	  ],
-    	  "properties": {
-    	    "age": "28 years",
-    	    "salary": "$6000"
-    	  }
+	      "empID": 100,
+	      "name": "Robert",
+	      "permanent": false,
+	      "address": {
+		        "street": "Foolhill Blvd",
+		        "city": "Pasadena",
+		        "zipcode": 91011
+	      },
+	      "phoneNumbers": [
+		        1234567,
+		        9876543
+	      ],
+	      "role": "Java Developer",
+	      "employed":true,
+	      "cities": [
+		        "Los Angeles",
+		        "New York"
+	      ],
+	      "properties": {
+		        "age": "28 years",
+		        "salary": "$6000"
+	      }
     	}
     		
     		
@@ -240,34 +240,39 @@ The variable msg will contain the JSON string above.
                 
         // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":false}
                 
-                // Add more to the JSON object tree
-                $.get("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
+        // Add more to the JSON object tree
+        $.jset("properties.pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
                 
-                out($.get("properties").toJson());
+        out($.toJson("properties"));
                 
-                // {"pets":{"cat":"Mr Wiggles","dog":"Happy"},"salary":"$6000","age":"28 years"}
+        // {"pets":{"cat":"Mr Wiggles","dog":"Happy"},"salary":"$6000","age":"28 years"}
                 
-                // You can also append to the JSON object like this
+        // You can also append to the JSON object like this
                 
-                // first remove pets
-                $.get("properties").remove("pets");
+        // first remove pets
+        
+        $.remove("properties.pets");
                 
-		/** myPets:
-	   		{
-	   		"cat":"Mr Happy",
-	   		"dog":"Wiggles"
-	   		}
-		*/
-                // create a pets JSON object
-                JsonQuery pets = JsonQuery.fromJson(myPets);
+	/** myPets:
+	   	{
+	   	"cat":"Mr Happy",
+	   	"dog":"Wiggles"
+	   	}
+	*/
                 
-                // add it
-                $.get("properties").set("pets",pets);
+        // create a pets JSON object
+        
+        JsonQuery pets = JsonQuery.fromJson(myPets);
                 
-                // print all
-                out($.toJson());
+        // add it
+        
+        $.put("properties.pets",pets);
                 
-                // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"pets":{"cat":"Mr Happy","dog":"Wiggles"},"salary":"$6000","age":"28 years"},"employed":false}
+        // print all
+        
+        out($.toJson());
+                
+        // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"pets":{"cat":"Mr Happy","dog":"Wiggles"},"salary":"$6000","age":"28 years"},"employed":false}
  
 
 
@@ -277,35 +282,37 @@ The variable msg will contain the JSON string above.
 
                 /**
  		{
- 	                "data": {
-  	                                "translations": [
-   	                                                {
-    	                                                "translatedText": "Hello world"
-                                                	}
-  	                                ]
-                	}
-		}
+ 			"data": {
+ 				"translations": [
+ 					{
+ 						"translatedText": "Hello world"
+ 					}
+ 				]
+ 			}
+ 		}
                 */
                 
                 
 		Grab the "translatedText" value like this:
 
                 JsonQuery $ = JsonQuery.fromJson(msg);
-                out($.get("data.translations.0.translatedText").val());
+                
+                out(
+                	$.val("data.translations.0.translatedText")
+                );
                 
                 // Hello world
                 
                 
                 // You can set a value like this
         
-		 $.get("data.translations.0.translatedText").set("Bonjour");
+		 $.set("data.translations.0.translatedText","Bonjour");
         
         		
-         
         	// Str gets the value of the node as a string (regardless of type)
         
         	out(
-        		$.get("data.translations.0.translatedText").str()
+        		$.str("data.translations.0.translatedText")
         	);
         
         	// Bonjour
@@ -314,41 +321,60 @@ The variable msg will contain the JSON string above.
         
         	// Sets the first position in the translations array to "Bonjour"
         
-        	$.get("data.translations.0").add("Bonjour");
+        	$.add("data.translations,"Bonjour");
                 
-                // Adds a Json Object to the first position in the translations array.
+                // Adds a Json Object to the second position in the translations array.
                 
-        
-	        $.get("data.translations").jadd(0,"{\"french\":\"Bonjour\",\"english\":\"hello\"}");
+	        $.jadd("data.translations",1,"{\"french\":\"Bonjour\",\"english\":\"hello\"}");
 	        
 	        out(
 	        	$.get("data.translations").toJson()
 	        );
 	        
-	       // [{"english":"hello","french":"Bonjour"},"Bonjour",{"translatedText":"Bonjour"}]
+	       // ["Bonjour",{"english":"hello","french":"Bonjour"},{"translatedText":"Bonjour"}]
 	       
-	       // Instead of "get", you can use "node". If get cannot find a node in the tree, it simply returns without
-	       // doing anything. Node, on the other hand, will first attempt to find the node, and, if it can't find 
+	       // You can use "get" to find a particular node. If get cannot find a node in the tree, 
+	       // it simply returns without doing anything. 
+	       
+	       $.get("data.translations);
+	       
+	       // gets the data translations array
+	       
+	       // and you can do this:
+	       
+	       $.get("data.translations).add("another translation");
+	       
+	       
+	       // "node", on the other hand, will first attempt to find the node, and, if it can't find 
 	       // it, it will then attempt to create it:
 	       
 	       $.node("data.NEW_NODE").set("this is a new node");  //creates a new node
 	       
-	       // One rule that has been put in place is disallowing arbitrary type conversions. In other words, if a node
-	       // has its type set to Array, it can only be converted to another type, such as object, by calling 
-	       // set(Object value) on that node, or by first calling toNull() on the node, and then changing it.
+	       // One rule that has been put in place is disallowing arbitrary conversions between Objects and Arrays.
 	       
-	       // The node operator will not attempt type conversion, so that if it encounters a type inconsistency, 
-	       // such as applying an array method to an object node, it will fail and return null. So this won't work:
+	       // For instance, if you have an object node, you cannot call add or jadd on that node.
 	       
+	       // Likewise, if you have an array node, you cannot call put or jput on that node.
 	       
-		$.node("data.translations.NEW_NODE").set("this is a new node");  //fails and returns null
+	       // If you want to reset a node to a different type, call "set"or "jset" on that node,
+	       
+	       // or first call clear() on the node, and then change it.
+	       
+	       // The node operator will not attempt type conversion either, so that if it encounters a type
+	       
+	       // inconsistency, such as applying an array method to an object node, it will fail and return null. 
+	       
+	       // This won't work:
+	       
+		$.node("data.translations.NEW_NODE").set("value");  //fails and returns null
 		
 		// This fails because translations is an array, and it is being referred to as an object in the javascript
-		// query
+		// path
 		
 		// This will work:
 		
 		$.node("data.translations.0.NEW_NODE").set("this is a new node");
+		
 		
 		//So will this
 		
@@ -357,27 +383,58 @@ The variable msg will contain the JSON string above.
 		
 		
 		// In this case, if the index is higher than the size of the array, null values will be inserted in the
+		
 		// array up to the index of the inserted value.
 
 
 
 #### Chaining, chaining, chaining.:
 
-	$.set("name", "bob")
-                .jset("test_scores","[]")._("test_scores")
-                .add(57).add(92).add(76);
+	// Building JSON with single nodes:
             
-        $.jset("family", "{}")._("family")
-            	.set("mother","Donna")
-            	.set("father","Bill")
-            	.set("sister", "Moonbeam")
-            	.jset("pets","[]")._("pets")
+	$ = JsonQuery.fromJson("{}");
+	
+	$.node("notification").
+		put("message","test").
+		put("sound","sounds/ararmsound.wav").
+		node("target").
+			node("apps").
+				node("0").
+					put("id","app_id").
+					node("platforms").
+						add("ios");
+	$.put("access_token", "access_token");
+	
+	
+	out($.toJson());
+	
+	// {"access_token":"access_token","notification":{"sound":"sounds/ararmsound.wav","message":"test","target":{"apps":[{"id":"app_id","platforms":["ios"]}]}}}
+		
+
+	$ = JsonQuery.fromJson("{}");
+
+	$.put("name", "bob").
+        jput("test_scores","[]").get("test_scores").
+               	add(57).
+                add(92).
+                add(76);
+            
+        $.jput("family", "{}").get("family")
+            	.put("mother","Donna")
+            	.put("father","Bill")
+            	.put("sister", "Moonbeam")
+            	.jput("pets","[]").get("pets")
             		.add("rover")
             		.add("killer")
             		.add(1,"fluffy");
+            		
+        out($.toJson());
+        
+        // {"name":"bob","test_scores":[57,92,76],"family":{"pets":["rover","fluffy","killer"],"mother":"Donna","father":"Bill","sister":"Moonbeam"}}
+
             
         out(
-        	$.get("family").get("pets").str(0)
+        	$.str("family.pets.0")
         );
         
         // rover
@@ -393,7 +450,7 @@ The variable msg will contain the JSON string above.
 	
 	// "phoneNumbers" is an array. We will iterate over it, printing both the node type, and it's value
 
-	for(JsonQuery number: $.get("phoneNumbers").each()){
+	for(JsonQuery number: $.each("phoneNumbers")){
             	out(
             		number.type() + " " + number.str()
             	);
@@ -445,15 +502,20 @@ Brief description of the methods. Will make this more detailed later, as this co
                 Tree traversal:
                 
                 get: finds a node JsonQuery Object tree. 
-                node: finds or creates a node in the JsonQuery Object tree using javascript queries.
+                node: finds or creates a node in the JsonQuery Object tree.
                  _: gets the next node in the JsonQuery Object tree (mostly used internally)
+                 
+                 
+                JSQL queryies
+                
+                jsql: returns a JSQLResultSet<JsonQuery>, which as a list of matching JsonQuery nodes.
                 
                 
                 
                 Getting values:
                 
                
-                val: gets a node (returns object) (used with javascript queries).
+                val: gets a node (returns object)
                 str: gets a node in string format, regardless of type.
 		bool: gets a boolean node (type sensitive)
                 i: gets an integer node (type sensitive)
@@ -463,17 +525,29 @@ Brief description of the methods. Will make this more detailed later, as this co
                 
                 
                 
-                Settng Values:
+                Updating Nodes: (That already exist)
                 
                 set: sets a value
                 jset: set a value from a JSON string
                 
+                
+                Updating/Adding Nodes: (That may or may not exist)
+                
+                put: sets a value
+                jput: set a value from a JSON string
                 
                 
                 Array Specific Setting Methods:
                 
                 add: adds a value
                 jadd: adds a value from a JSON string
+                
+                
+                
+                Creating Nodes:
+                
+                obj: creates an empty object node
+                arr: creates an empty array node
                 
                 
                 
@@ -487,8 +561,18 @@ Brief description of the methods. Will make this more detailed later, as this co
                 
                 remove(string): Removing an object member
                 remove(int): Removing an array member
-                toNull() seting a node to null
                 
+                
+                
+                Clearing
+                
+                clear() clears a node
+                
+                
+                
+                Testing Existence
+                
+                exists: true or false depending on the nodes existence.
                 
                 
                 Type determination:
@@ -508,15 +592,13 @@ Brief description of the methods. Will make this more detailed later, as this co
                 
                 
                 
-		Inherited Methods: JsonQueryHashMap extends HashMap, and JsonQueryArrayList extends ArrayList.
+		Inherited Methods: JsonQueryObject extends HashMap, and JsonQueryArray extends ArrayList.
 
 
 
 ## Additional Info
 
 The JSON string must start with braces {}.
-
-TODO: Need to improve the parsing of the json queries. It is not ready to handle arbitrary queries. Thinking about adding search functions, bulk add functions, and more advanced query traversal methods. Any ideas? Suggestions?
 
 The aim here is convenience and flexibiliy, and to give the Java manipulation a "Javascript like feel". I have not tested the performance.
 
