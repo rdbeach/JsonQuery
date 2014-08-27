@@ -92,7 +92,7 @@ Alternatively, you can edit the JsonQueryTest.java file so that it does not cont
 
 Start with a JSON string:
 
-                {
+        {
     	  "empID": 100,
     	  "name": "Robert",
     	  "permanent": false,
@@ -124,16 +124,16 @@ The variable msg will contain the JSON string above.
  
 #### Next, convert the JSON string to a JsonQuery object. 
  
-                // create JsonQuery object 
+        // create JsonQuery object 
                 
-                JsonQuery $ = JsonQuery.fromJson(msg);
+        JsonQuery $ = JsonQuery.fromJson(msg);
                 
-                    
-                // or recreate the JSON string from the JsonQuery object
+            
+        // or recreate the JSON string from the JsonQuery object
                 
-                out($.toJson()); // out means System.out.println.
+        out($.toJson()); // out means System.out.println.
                 
-                // {"empID":100,"address":{"zipcode":91011,"city":"Pasadena","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"permanent":false,"name":"Robert","phoneNumbers":[1234567,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
+        // {"empID":100,"address":{"zipcode":91011,"city":"Pasadena","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"permanent":false,"name":"Robert","phoneNumbers":[1234567,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
                 
                 
 
@@ -142,22 +142,25 @@ The variable msg will contain the JSON string above.
 
 #### Retrieve some properties from the newly created object:
                     
-                // Whats my city? (str gets a string)
-                out($.get("address.city").str());
+        // Whats my city? (str gets a string)
+        
+        out($.str("address.city"));
                 
-                // Pasadena
+        // Pasadena
                 
-                //You can also use "val", but this returns Object, so you must cast to the type you want
-                String city = (String) $.get("address.city").val();
+        //You can also use "val", but this returns Object, so you must cast to the type you want
+        
+        String city = (String) $.val("address.city");
                 
-                out(city);
+        out(city);
                 
-                // Pasadena
+        // Pasadena
                 
-                // Whats my phone # (i gets an integer)
-                out($.get("phoneNumbers.1").i());
+        // Whats my phone # (i gets an integer)
+        
+        out($.i("phoneNumbers.1"));
                 
-                // 9876543
+        // 9876543
 
 
 
@@ -165,23 +168,37 @@ The variable msg will contain the JSON string above.
 
 #### Set some properties:
                     
-                // Change my city
-                $.get("address").set("city","san fran");
+        // Change my city like this: (If set cannot find the path to city, it will do nothing)
+        
+        $.set("address.city","san fran");
+         
+        // or like this: (If put cannot find the path to city, it will create it and set the value)
+        
+        $.put("address.city","san fran");
+        
+        // or like this: (Like put, node will find or create the path to city, the field will be updated with set)
+        
+        $.node("address.city").set("san fran");
+        
+        
                 
-                // Print new address in json format
-                out($.get("address").toJson());
+        // Print new address in json format
+        
+        out($.toJson("address"));
                 
-                // {"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"}
+        // {"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"}
                 
-                // Update phone numbers
-                JsonQuery phoneNumbers = $.get("phoneNumbers");
-                phoneNumbers.add(0,5555555);
-                phoneNumbers.remove(1);
+        // Update phone numbers
+        
+        JsonQuery phoneNumbers = $.get("phoneNumbers");
+        phoneNumbers.add(0,5555555);
+        phoneNumbers.remove(1);
                 
-                // Print phone numbers in json format
-                out(phoneNumbers.toJson());
+        // Print phone numbers in json format
+        
+        out(phoneNumbers.toJson());
                 
-                // [5555555,9876543]
+        // [5555555,9876543]
                     
 
 
@@ -189,13 +206,15 @@ The variable msg will contain the JSON string above.
 
 #### Use a JSON string to add to the JsonQuery object tree (with jset):
                     
-                // Add my hobbies
-                $.jset("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
+        // Add my hobbies
+        
+        $.jset("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
                 
-                // Print the whole thing again
-                out($.toJson());
+        // Print the whole thing again
+        
+        out($.toJson());
                 
-                // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"hobbies":["tennis","hiking","swimming"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
+        // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"hobbies":["tennis","hiking","swimming"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
                     
 
 
@@ -203,20 +222,23 @@ The variable msg will contain the JSON string above.
 
 #### More manipualtion: Removing stuff. Changing stuff. etc.
                     
-                // Actually I don't like swimming
-                $.get("hobbies").remove(2);
-                out($.get("hobbies").toJson());
+        // Actually I don't like swimming
+        
+        $.remove("hobbies.2");
+        out($.toJson("hobbies"));
                 
-                // ["tennis","hiking"]
+        // ["tennis","hiking"]
                 
-                // Oh no, I lost my job
-                $.remove("role");
-                $.set("employed",false);
+        // Oh no, I lost my job
+        
+        $.remove("role");
+        $.set("employed",false);
                 
-                // Print the whole thing again
-                out($.toJson());
+        // Print the whole thing again
+        
+        out($.toJson());
                 
-                // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":false}
+        // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":false}
                 
                 // Add more to the JSON object tree
                 $.get("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
