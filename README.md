@@ -16,15 +16,53 @@ It consists of two parts:
 	2) JSQL queries (JSON Strucured Query Language)
 	
 
-The single node operators allow you to maniputate the JSON tree one node at a time. For instance, a deeply nested JSON field can be extracted as follows:
+The single node operators allow you to maniputate the JSON tree one node at a time. For instance, a deeply nested JSON field 
 
-**$.get("company.sales.international.reps.bob.commision").val();**
+	"company":{
+		"sales":{
+			"international":{
+				"reps":[
+					{
+						"name":"bob",
+						"start date":5-17-06",
+						"monthly commission":5000
+					},
+					{
+						"name":"stu",
+						"start date":12-10-06",
+						"monthly commission":10000
+					},
+					{
+						"name":"bill",
+						"start date":1-23-07",
+						"monthly commission":4000
+					}
+				]
+			}
+		}
+	}
+	
+can be extracted as follows:
+
+	**$.val("company.sales.international.reps.0.name");**
+
+	// bob
+
+or updated like this:
+
+	**$.set("company.sales.international.reps.0.monthly commission",6000);**
+
+
 
 As you can see, you create a "path" string to target a particular node.
 
+
+
 The JSQL Engine allows you to run SQL style queries on the JSON structure, like this:
 
-**$.jsql("Select * from company:reps.? where commision>5000)**
+	**$.jsql("Select name from company:reps.? where monthly commision>5000)**
+	
+	// The result set would return stu
 
 The query returns a result set, which is a set of matching nodes.
 
