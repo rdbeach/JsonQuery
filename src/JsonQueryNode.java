@@ -726,6 +726,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	public JsonQuery remove(String path){
 		JsonQueryToken<?>[] keys = getKeys(path);
 		JsonQueryNode node = path(this,keys,true);
+		
 		if(!node.exists()){
 			return this;
 		}

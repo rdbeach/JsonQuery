@@ -59,49 +59,94 @@ public class JsonQueryTest {
 		try{
 			
 			// Test multiline string
+			
 			System.out.println(msg);
 			
 			// create JSON object
+			
 			JsonQuery $ = JsonQuery.fromJson(msg);
 			
 			// or recreate JSON string from JSON object using class method
+			
 			out($.toJson());
 			
 			// Whats my city? (str gets a string)
+	        
 			out($.str("address.city"));
+	                
+	        // Pasadena
+	                
+	        //You can also use "val", but this returns Object, so you must cast to the type you want
+	        
+	        String city = (String) $.val("address.city");
+	                
+	        out(city);
+	                
+	        // Pasadena
+	                
+	        // Whats my phone # (i gets an integer)
+	        
+	        out($.i("phoneNumbers.1"));
+	                
+	        // 9876543
+
+			// Change my city like this: (If set cannot find the path to city, it will do nothing)
+	        
+	        $.set("address.city","san fran");
+	         
+	        // or like this: (If put cannot find the path to city, it will create it and set the value)
+	        
+	        $.put("address.city","san fran");
+	        
+	        // or like this: (Like put, node will find or create the path to city, the field will be updated with set)
+	        
+	        $.node("address.city").set("san fran");
 			
-			//You can also use val, but this returns object so you must cast to the type you want
-			String city = (String) $.val("address.city");
-			out(city);
-			
-			// Whats my phone # (i gets an integer)
-			
-			out($.i("phoneNumbers.1"));
-			
-			// Update phone numbers
-			JsonQuery phoneNumbers = $.get("phoneNumbers");
-			phoneNumbers.add(0,5555555);
-			phoneNumbers.remove(1);
-			
-			// Print phone numbers in json format
-			out(phoneNumbers.toJson());
+	        // Print new address in json format
+	        
+	        out($.toJson("address"));
+	                
+	        // {"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"}
+	                
+	        // Update phone numbers
+	        
+	        JsonQuery phoneNumbers = $.get("phoneNumbers");
+	        phoneNumbers.add(0,5555555);
+	        phoneNumbers.remove(1);
+	                
+	        // Print phone numbers in json format
+	        
+	        out(phoneNumbers.toJson());
+	                
+	        // [5555555,9876543]
 			
 			// Add my hobbies
-			$.jput("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
+			
+	        $.jput("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
 			
 			// Print the whole thing again
-			out($.toJson());
 			
-			// Actually I don't like swimming
-			$.remove("hobbies.2");
-			out($.toJson("hobbies"));
+	        out($.toJson());
+	        
+	        // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"role":"Java Developer","cities":["Los Angeles","New York"],"hobbies":["tennis","hiking","swimming"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":true}
 			
-			// Oh no, I lost my job
-			$.remove("role");
-			$.put("employed",false);
-			
-			// Print the whole thing again
-			out($.toJson());
+	        // Actually I don't like swimming
+	        
+	        $.remove("hobbies.2");
+	        out($.toJson("hobbies"));
+	                
+	        // ["tennis","hiking"]
+	                
+	        // Oh no, I lost my job
+	        
+	        $.remove("role");
+	        $.set("employed",false);
+	                
+	        // Print the whole thing again
+	        
+	        out($.toJson());
+	                
+	        // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":false}
 			
 			// Go deeper in the tree
 			$.get("properties").jput("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
