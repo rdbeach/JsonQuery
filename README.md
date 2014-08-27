@@ -321,7 +321,7 @@ The variable msg will contain the JSON string above.
         
         	// Sets the first position in the translations array to "Bonjour"
         
-        	$.add("data.translations,"Bonjour");
+        	$.add("data.translations","Bonjour");
                 
                 // Adds a Json Object to the second position in the translations array.
                 
