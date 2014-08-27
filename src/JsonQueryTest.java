@@ -45,27 +45,6 @@ public class JsonQueryTest {
 	
 	/**
 	{
-	    "notification": {
-	        "message": "test",
-	        "sound": "sounds/alarmsound.wav",
-	        "target": {
-	            "apps": [
-	                {
-	                    "id": "app_id",
-	                    "platforms": [
-	                        "ios"
-	                    ]
-	                }
-	            ]
-	        }
-	    },
-	    "access_token": "access_token"
-	}
-	*/
-	@Multiline private static String msg3;
-	
-	/**
-	{
 		"cat":"Mr Happy",
 		"dog":"Wiggles"
 	}
@@ -98,77 +77,6 @@ public class JsonQueryTest {
 			// Whats my phone # (i gets an integer)
 			
 			out($.i("phoneNumbers.1"));
-			
-			$.node("address.kill").add(1);
-			
-			//$.node("address.city.los angeles");
-			
-			JsonQuery address = $.get("address");
-			
-			
-			/**
-			{
-			    "notification": {
-			        "message": "test",
-			        "sound": "sounds/alarmsound.wav",
-			        "target": {
-			            "apps": [
-			                {
-			                    "id": "app_id",
-			                    "platforms": [
-			                        "ios"
-			                    ]
-			                }
-			            ]
-			        }
-			    },
-			    "access_token": "access_token"
-			}
-			*/
-			
-			$.node("notification").
-				put("message","test").
-				put("sound","sounds/ararmsound.wav").
-				node("target").
-					node("apps").
-						node("0").
-							put("id","app_id").
-							node("platforms").
-								add("ios");
-			$.put("access_token", "access_token");
-			
-			address.node("region").
-				put("fishing", "trout").
-				node("hiking").
-					put("hi","low").
-					put("bool",false).
-					node("times").
-						add(11).
-						add(12);
-			
-			address.node("personal").
-				put("name", "bob")
-				.jput("test_scores","[]").get("test_scores").
-					add(57).
-					add(92).
-					add(76);
-
-			address.get("personal").
-				jput("family", "{}").get("family")
-	            	.put("mother","Donna")
-	            	.put("father","Bill")
-	            	.put("sister", "Moonbeam")
-	            	.jput("pets","[]").get("pets")
-	                	.add("rover")
-	                	.add("killer")
-	                	.add(1,"fluffy");
-			
-
-			//$.put("address",$.obj());
-
-			
-			// Print new address in json format
-			out($.toJson("address"));
 			
 			// Update phone numbers
 			JsonQuery phoneNumbers = $.get("phoneNumbers");
@@ -207,9 +115,14 @@ public class JsonQueryTest {
 			JsonQuery pets = JsonQuery.fromJson(myPets);
 			
 			// add it
-			$.get("properties").put("pets",pets);
+			$.put("properties.pets",pets);
 			
-			$.node("properites.kids").add("chucky").add("sissy").add("missy");
+			// Add an array element
+			
+			$.node("properites.kids").
+				add("chucky").
+				add("sissy").
+				add("missy");
 			
 			// print all
 			out($.toJson());
@@ -220,6 +133,24 @@ public class JsonQueryTest {
             out(
             	$.val("data.translations.0.translatedText")
             );
+            
+            // Building JSON with single nodes:
+            
+            $ = JsonQuery.fromJson("{}");
+            
+            $.node("notification").
+			put("message","test").
+			put("sound","sounds/ararmsound.wav").
+			node("target").
+				node("apps").
+					node("0").
+						put("id","app_id").
+						node("platforms").
+							add("ios");
+            $.put("access_token", "access_token");
+            
+            
+            out($.toJson());
 			
 		}catch(Exception e){System.out.println(e);};
 	}

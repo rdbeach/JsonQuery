@@ -322,11 +322,9 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 							if(node.element==null){
 								node.element = new JsonQueryObject();
 							}else{
-								out(1);
 								return new JsonQueryNode(null,null);
 							}
 						}
-						out(keys[i].str());
 						((JsonQueryObject) node.element).put(keys[i].str(),nextNode);
 						if(i+1<keys.length){
 							if(!(keys[i+1].type.equals("String"))){
@@ -339,7 +337,6 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 					node=nextNode;
 				}
 			}
-			out(node.element);
 			return node;
 		}catch(Throwable e){
 			handleException(e);
