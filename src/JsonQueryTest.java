@@ -78,10 +78,15 @@ public class JsonQueryTest {
 			
 			out($.i("phoneNumbers.1"));
 			
+			$.put("address.kill",$.obj().
+					put("name","phonix").
+					put("last name","river").
+					put("middle name","stupid")
+				 );
 			
-			//$.node("address.state").put("birthplace","CA");
+			//$.node("address.city.los angeles");
 			
-			JsonQuery address =$.get("address");
+			JsonQuery address = $.get("address");
 			
 			address.put(
 					"region",$.obj().
@@ -113,7 +118,7 @@ public class JsonQueryTest {
 	                	.add("killer")
 	                	.add(1,"fluffy");
 			
-			
+
 			//$.put("address",$.obj());
 
 			

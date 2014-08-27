@@ -11,7 +11,6 @@ import java.util.regex.Pattern;
 import src.JSQL.JSQLEngine;
 import src.JSQL.JSQLNode;
 import src.JSQL.JSQLResultSet;
-import src.JSQL.JSQLTokenMap;
 import src.JSQL.JSQLUtil;
 
 import com.google.gson.Gson;
@@ -318,7 +317,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 				}else{
 					JsonQueryNode nextNode = (JsonQueryNode) node._(keys[i].str());
 					if(!nextNode.exists()){
-						nextNode.key=keys[i].toString();
+						nextNode.key=keys[i].str();
 						if(!(node.element instanceof JsonQueryObject)) {
 							if(node.element==null){
 								node.element = new JsonQueryObject();
@@ -326,7 +325,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 								return new JsonQueryNode(null,null);
 							}
 						}
-						((JsonQueryObject) node.element).put(keys[i].toString(),nextNode);
+						((JsonQueryObject) node.element).put(keys[i].str(),nextNode);
 						if(i+1<keys.length){
 							if(!(keys[i+1].type.equals("String"))){
 								nextNode.element=new JsonQueryArray();
@@ -613,10 +612,11 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	 * @see JsonQuery#put(java.lang.String, java.lang.Object)
 	 */
 	@Override
-	public JsonQuery put(String key, Object value){
+	public JsonQuery put(String path, Object value){
 		if(element == null)element = new JsonQueryObject();
 		if(element instanceof JsonQueryObject){
-			((JsonQueryObject)element).set(key,formatValue(value));
+			JsonQuery node = this.node(path);
+			node.set(value);
 		}
 		return this;
 	}
@@ -625,14 +625,11 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	 * @see JsonQuery#jput(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public JsonQuery jput(String key, String value){
+	public JsonQuery jput(String path, String value){
 		if(element == null)element = new JsonQueryObject();
 		if(element instanceof JsonQueryObject){
-			try{
-				((JsonQueryObject)element).jset(key,value,getGson());
-			}catch(Throwable e){
-				handleException(e);
-			}
+			JsonQuery node = this.node(path);
+			node.jset(value);
 		}
 		return this;
 	}

@@ -99,9 +99,9 @@ public abstract class JsonQuery {
 	
 	public abstract JsonQuery jset(int key, String value);
 	
-	public abstract JsonQuery put(String key, Object value);
+	public abstract JsonQuery put(String path, Object value);
 	
-	public abstract JsonQuery jput(String key, String value);
+	public abstract JsonQuery jput(String path, String value);
 	
 	public abstract JsonQuery add(Object value);
 	
