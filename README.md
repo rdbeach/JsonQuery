@@ -319,9 +319,9 @@ The variable msg will contain the JSON string above.
         		
         		
         
-        	// Sets the first position in the translations array to "Bonjour"
-        
-        	$.add("data.translations","Bonjour");
+        	// Adds a translation to the translations array
+            
+        	$.add("data.translations","Bonjour:hello");
                 
                 // Adds a Json Object to the second position in the translations array.
                 
@@ -331,7 +331,7 @@ The variable msg will contain the JSON string above.
 	        	$.get("data.translations").toJson()
 	        );
 	        
-	       // ["Bonjour",{"english":"hello","french":"Bonjour"},{"translatedText":"Bonjour"}]
+	       // [{"translatedText":"Bonjour"},{"english":"hello","french":"Bonjour"},"Bonjour:hello"]
 	       
 	       // You can use "get" to find a particular node. If get cannot find a node in the tree, 
 	       // it simply returns without doing anything. 
