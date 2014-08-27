@@ -673,6 +673,28 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		return this;
 	}
 	
+	// add an array element
+	/* (non-Javadoc)
+	 * @see JsonQuery#add(java.lang.String, java.lang.Object)
+	 */
+	@Override
+	public JsonQuery add(String path, Object value){
+		JsonQuery node = this.node(path);
+		node.add(value);
+		return this;
+	}
+	
+	// add an array element
+	/* (non-Javadoc)
+	 * @see JsonQuery#add(java.lang.String, int, java.lang.Object)
+	 */
+	@Override
+	public JsonQuery add(String path, int i, Object value){
+		JsonQueryNode node = this.get(path);
+		node.add(i,value);
+		return this;
+	}
+	
 	/* (non-Javadoc)
 	 * @see JsonQuery#jadd(java.lang.String)
 	 */
@@ -704,6 +726,28 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 				handleException(e);
 			}
 		}
+		return this;
+	}
+	
+	// add an array element
+	/* (non-Javadoc)
+	 * @see JsonQuery#jadd(java.lang.String, java.lang.String)
+	 */
+	@Override
+	public JsonQuery jadd(String path, String value){
+		JsonQuery node = this.node(path);
+		node.jadd(value);
+		return this;
+	}
+	
+	// add an array element
+	/* (non-Javadoc)
+	 * @see JsonQuery#jadd(java.lang.String, int, java.lang.String)
+	 */
+	@Override
+	public JsonQuery jadd(String path, int i, String value){
+		JsonQueryNode node = this.get(path);
+		node.jadd(i,value);
 		return this;
 	}
 

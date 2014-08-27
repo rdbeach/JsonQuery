@@ -107,9 +107,17 @@ public abstract class JsonQuery {
 	
 	public abstract JsonQuery add(int i, Object value);
 	
+	public abstract JsonQuery add(String path, Object value);
+	
+	public abstract JsonQuery add(String path, int i, Object value);
+	
 	public abstract JsonQuery jadd(String value);
 	
 	public abstract JsonQuery jadd(int key, String value);
+	
+	public abstract JsonQuery jadd(String path, String value);
+	
+	public abstract JsonQuery jadd(String path, int key, String value);
 
 	public abstract JsonQuery clear();
 

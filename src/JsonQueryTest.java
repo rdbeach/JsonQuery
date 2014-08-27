@@ -152,32 +152,45 @@ public class JsonQueryTest {
 			$.get("properties").jput("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
 			out($.toJson("properties"));
 			
-			// You can also append to the JSON object like this
-			// first remove pets
-			$.remove("properties.pets");
+			// Add more to the JSON object tree
+	        $.jset("properties.pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
+	                
+	        out($.toJson("properties"));
+	                
+	        // {"pets":{"cat":"Mr Wiggles","dog":"Happy"},"salary":"$6000","age":"28 years"}
+	                
+	        // You can also append to the JSON object like this
+	                
+	        // first remove pets
+	        
+	        $.remove("properties.pets");
+	                
+	        // create a pets JSON object
+	        
+	        JsonQuery pets = JsonQuery.fromJson(myPets);
+	                
+	        // add it
+	        
+	        $.put("properties.pets",pets);
+	                
+	        // print all
+	        
+	        out($.toJson());
+	                
+	        // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"pets":{"cat":"Mr Happy","dog":"Wiggles"},"salary":"$6000","age":"28 years"},"employed":false}
 			
-			// create a pets JSON object
-			JsonQuery pets = JsonQuery.fromJson(myPets);
-			
-			// add it
-			$.put("properties.pets",pets);
-			
-			// Add an array element
-			
-			$.node("properites.kids").
-				add("chucky").
-				add("sissy").
-				add("missy");
-			
-			// print all
-			out($.toJson());
-			
+	        
+	        
 			// Test msg2
 			
 			$ = JsonQuery.fromJson(msg2);
             out(
             	$.val("data.translations.0.translatedText")
             );
+            
+            // Hello world
+            
+            
             
             // Building JSON with single nodes:
             
@@ -196,6 +209,8 @@ public class JsonQueryTest {
             
             
             out($.toJson());
+            
+            // {"access_token":"access_token","notification":{"sound":"sounds/ararmsound.wav","message":"test","target":{"apps":[{"id":"app_id","platforms":["ios"]}]}}}
 			
 		}catch(Exception e){System.out.println(e);};
 	}
