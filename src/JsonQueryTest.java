@@ -68,20 +68,57 @@ public class JsonQueryTest {
 			out($.toJson());
 			
 			// Whats my city? (str gets a string)
-			out($.get("address.city").str());
+			out($.str("address.city"));
 			
 			//You can also use val, but this returns object so you must cast to the type you want
-			String city = (String) $.get("address").val("city");
+			String city = (String) $.val("address.city");
 			out(city);
 			
 			// Whats my phone # (i gets an integer)
-			out($.get("phoneNumbers.1").i());
 			
-			// Change my city
-			$.get("address").set("city","san fran");
+			out($.i("phoneNumbers.1"));
+			
+			
+			//$.node("address.state").put("birthplace","CA");
+			
+			JsonQuery address =$.get("address");
+			
+			address.put(
+					"region",$.obj().
+						put("fishing", "trout").
+						put("hiking",$.obj().
+							put("hi","low").
+							put("bool",false).
+							put("times",$.arr().
+									add(11).
+									add(12)
+								)
+							)
+						);
+			
+			address.node("personal").
+				put("name", "bob")
+				.jput("test_scores","[]").get("test_scores").
+					add(57).
+					add(92).
+					add(76);
+
+			address.get("personal").
+				jput("family", "{}").get("family")
+	            	.put("mother","Donna")
+	            	.put("father","Bill")
+	            	.put("sister", "Moonbeam")
+	            	.jput("pets","[]").get("pets")
+	                	.add("rover")
+	                	.add("killer")
+	                	.add(1,"fluffy");
+			
+			
+			//$.put("address",$.obj());
+
 			
 			// Print new address in json format
-			out($.get("address").toJson());
+			out($.toJson("address"));
 			
 			// Update phone numbers
 			JsonQuery phoneNumbers = $.get("phoneNumbers");
@@ -92,35 +129,37 @@ public class JsonQueryTest {
 			out(phoneNumbers.toJson());
 			
 			// Add my hobbies
-			$.jset("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
+			$.jput("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
 			
 			// Print the whole thing again
 			out($.toJson());
 			
 			// Actually I don't like swimming
-			$.get("hobbies").remove(2);
-			out($.get("hobbies").toJson());
+			$.remove("hobbies.2");
+			out($.toJson("hobbies"));
 			
 			// Oh no, I lost my job
 			$.remove("role");
-			$.set("employed",false);
+			$.put("employed",false);
 			
 			// Print the whole thing again
 			out($.toJson());
 			
 			// Go deeper in the tree
-			$.get("properties").jset("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
-			out($.get("properties").toJson());
+			$.get("properties").jput("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
+			out($.toJson("properties"));
 			
 			// You can also append to the JSON object like this
 			// first remove pets
-			$.get("properties").remove("pets");
+			$.remove("properties.pets");
 			
 			// create a pets JSON object
 			JsonQuery pets = JsonQuery.fromJson(myPets);
 			
 			// add it
-			$.get("properties").set("pets",pets);
+			$.get("properties").put("pets",pets);
+			
+			$.node("properites.kids").add("chucky").add("sissy").add("missy");
 			
 			// print all
 			out($.toJson());
@@ -129,7 +168,7 @@ public class JsonQueryTest {
 			
 			$ = JsonQuery.fromJson(msg2);
             out(
-            	$.get("data.translations.0.translatedText").val()
+            	$.val("data.translations.0.translatedText")
             );
 			
 		}catch(Exception e){System.out.println(e);};

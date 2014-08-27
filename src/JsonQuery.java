@@ -36,6 +36,10 @@ public abstract class JsonQuery {
 	}
 	
 	public abstract String getKey();
+	
+	public abstract JsonQueryNode obj();
+	
+	public abstract JsonQueryNode arr();
 
 	public abstract JsonQuery _(String key);
 
@@ -84,47 +88,65 @@ public abstract class JsonQuery {
 	public abstract double d(int key);
 
 	public abstract JsonQuery set(Object value);
-
-	public abstract JsonQuery jset(String value);
-
-	public abstract JsonQuery set(String key, Object value);
-
+	
+	public abstract JsonQuery set(String path, Object value);
+	
 	public abstract JsonQuery set(int key, Object value);
-
-	public abstract JsonQuery jset(String key, String value);
-
+	
+	public abstract JsonQuery jset(String value);
+	
+	public abstract JsonQuery jset(String path, String value);
+	
 	public abstract JsonQuery jset(int key, String value);
-
+	
+	public abstract JsonQuery put(String key, Object value);
+	
+	public abstract JsonQuery jput(String key, String value);
+	
 	public abstract JsonQuery add(Object value);
-
+	
 	public abstract JsonQuery add(int i, Object value);
-
+	
 	public abstract JsonQuery jadd(String value);
-
+	
 	public abstract JsonQuery jadd(int key, String value);
 
-	public abstract JsonQuery toNull();
+	public abstract JsonQuery clear();
 
-	public abstract JsonQuery remove(String key);
+	public abstract JsonQuery remove(String path);
 
 	public abstract JsonQuery remove(int key);
 
 	public abstract JsonQueryArray each();
+	
+	public abstract JsonQueryArray each(String path);
 
 	public abstract Iterator<Object> iterator();
 
 	public abstract boolean hasNext();
 
 	public abstract boolean exists();
+	
+	public abstract boolean exists(String path);
 
 	public abstract String type();
+	
+	public abstract String type(String path);
 
 	public abstract boolean isLeaf();
+	
+	public abstract boolean isLeaf(String path);
 
 	public abstract boolean isObject();
+	
+	public abstract boolean isObject(String path);
 
 	public abstract boolean isArray();
+	
+	public abstract boolean isArray(String path);
 
 	public abstract String toJson();
+	
+	public abstract String toJson(String path);
 
 }

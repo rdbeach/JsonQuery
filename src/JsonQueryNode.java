@@ -20,9 +20,9 @@ import com.google.gson.internal.LazilyParsedNumber;
 
 
 public class JsonQueryNode extends JsonQuery implements JSQLNode{
-	
+
 	private static final String EMPTY = "";
-	
+
 	private static final String PATH_DELIMITER_REGEX = "(?<!\\\\)[.]";
 	private static final String DOUBLE_BACKSLASH = "\\";
 	private static final String QUADRUPLE_BACKSLASH = "\\\\";
@@ -34,65 +34,83 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	private static final String KEYQUOTES = "``(?!`)|(?<!\\\\)`";
 	private static final String KEY_PLACEHOLDER = "``";
 	public transient String key = EMPTY;
-	
+
 	@Override
 	public String getKey(){
 		return key;
 	}
-	
+
 	@Override
 	public void setKey(String key) {
 		// TODO Auto-generated method stub
 		this.key = key;
 	}
-	
+
 	public Object element;
-	
+
 	private transient JsonQueryNode antenode;
-	
+
 	@Override
 	public void setAntenode(JSQLNode antenode) {
 		// TODO Auto-generated method stub
 		this.antenode = (JsonQueryNode)antenode;
 	}
-	
+
 	public JsonQueryNode getAntenode(){
 		return this.antenode;
 	}
-	
+
 	private transient Gson gson;
-	
+
 	private Gson getGson(){
 		gson = (gson!=null? gson : (ensureThreadSafety?new GsonBuilder().
-					disableHtmlEscaping().
-					registerTypeAdapter(JsonQueryNode.class, new JsonQueryDeserializer()).
-					registerTypeAdapter(JsonQueryNode.class, new JsonQuerySerializer()).
-					registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
-					serializeNulls().
-					create():static_gson));
+				disableHtmlEscaping().
+				registerTypeAdapter(JsonQueryNode.class, new JsonQueryDeserializer()).
+				registerTypeAdapter(JsonQueryNode.class, new JsonQuerySerializer()).
+				registerTypeAdapter(JsonQueryNumber.class, new JsonQueryNumberSerializer()).
+				serializeNulls().
+				create():static_gson));
 		return gson;
 	}
-	
+
 	public JsonQueryNode(){
-		
+
 	}
-	
+
 	public JsonQueryNode(Object node){
 		this.element = node;
 	}
-	
+
 	public JsonQueryNode(Object element, String key){
 		this.element = element;
 		this.key = key;
 	}
-	
+
 	@Override
 	public JsonQueryNode createNewNode(Object element, String key){
 		return new JsonQueryNode(element,key);
 	}
 	
-	// Single node tree traversal operator
+	// create an object
+	/* (non-Javadoc)
+	 * @see JsonQuery#obj()
+	 */
+	@Override
+	public JsonQueryNode obj(){
+		return new JsonQueryNode(new JsonQueryObject());
+	}
 	
+	// create an array
+	/* (non-Javadoc)
+	 * @see JsonQuery#arr()
+	 */
+	@Override
+	public JsonQueryNode arr(){
+		return new JsonQueryNode(new JsonQueryArray());
+	}
+
+	// Node Traversal
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#_(java.lang.String)
 	 */
@@ -104,7 +122,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return new JsonQueryNode(null,null);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#_(int)
 	 */
@@ -118,148 +136,162 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return new JsonQueryNode(null,null);
 	}
-	
+
 	@Override
 	public JsonQueryNode getNextNode(String key) {
 		return _(key);
 	}
-	
+
 	@Override
 	public JsonQueryNode getNextNode(int key) {
 		return _(key);
 	}
-	
-	// Multinode: tree traversal operator
-	
+
+	// Path traversal
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#get(java.lang.String)
 	 */
 	@Override
 	public JsonQueryNode get(String path) {
-		String[] keys = getKeys(path);
+		JsonQueryToken<?>[] keys = getKeys(path);
 		return path(this,keys,false);
 	}
-	
-	private List<String> fragmentOnQuotedKeys(String path){
-		Pattern pattern = Pattern.compile(KEYQUOTES);
-	    Matcher matcher = pattern.matcher(path);
-	    
-	    List<String> tokens = new ArrayList<String>();
-	    
-	    String lastFragment = EMPTY;
-	    int index=0;
-	    int lastIndex=0;
-	    int group=0;
-	    int capture_group=0;
-	    boolean someGroupIsCaptured=false;
-	    
-	    while (matcher.find()) {
-	    	String groupStr = matcher.group(0);
-	    	if(groupStr.equals(DOUBLE_BACKTICK)){
-	    		group=1;
-	    	}else{
-	    		group=2;
-	    	}
-	    	if(!someGroupIsCaptured||group==capture_group){
-		    	index=matcher.start();
-		    	String token = path.substring(lastIndex,index);
-		    	tokens.add(token);
-		    	lastIndex=matcher.end();
-		    	capture_group=group;
-		    	someGroupIsCaptured = !someGroupIsCaptured;
-		    // special case 1 (captured ` found \``)
-	    	}else if(group==1&&capture_group==2){  
-	    		index=matcher.start()+1;
-	    		String token = path.substring(lastIndex,index);
-		    	tokens.add(token);
-		    	lastIndex=index+1;
-		    	someGroupIsCaptured = !someGroupIsCaptured;
-	    	}
-	    }
-	    if(someGroupIsCaptured){
-	    	return null;
-	    }
-	    if(lastIndex<path.length()){
-	    	lastFragment = path.substring(lastIndex,path.length());
-	    }else{
-	    	lastFragment=EMPTY;
-	    }
-	    tokens.add(lastFragment);
-	    return tokens;
-	}
-	
-	private String[] getKeys(String path){
-		
+
+	private JsonQueryToken<?>[] getKeys(String path){
+
 		List<String> tokensList = fragmentOnQuotedKeys(path);
 		Object[] tokensStr=tokensList.toArray();
-		
+
 		if(tokensStr==null){
-			return new String[]{};
+			return new JsonQueryToken[]{};
 		}
-		
+
 		StringBuilder str = new StringBuilder(EMPTY);
 		for (int i = 0; i < tokensStr.length; i+=2) {
-		    str.append((String)tokensStr[i]);
-		    if(i+2<tokensStr.length)
-		    str.append(KEY_PLACEHOLDER);
+			str.append((String)tokensStr[i]);
+			if(i+2<tokensStr.length)
+				str.append(KEY_PLACEHOLDER);
 		}
 		path=str.toString();
-		
-		String[] keys = path.split(PATH_DELIMITER_REGEX);
+
+		String[] keysString = path.split(PATH_DELIMITER_REGEX);
+		JsonQueryToken<?>[] keys = new JsonQueryToken<?>[keysString.length];
 		int replacementCount=1;
 		int i = 0;
-		for(String key:keys){
+		boolean isReplacement=false;
+		for(Object keyObj:keysString){
+			String key = (String)keyObj;
 			while(key.contains(KEY_PLACEHOLDER)){
 				key = key.replaceFirst(KEY_PLACEHOLDER,((String)tokensStr[replacementCount]).
 						replace(DOUBLE_BACKSLASH, QUADRUPLE_BACKSLASH).
 						replace(DOLLARSIGN, DOLLARSIGN_BACKSLASH));
 				replacementCount+=2;
+				isReplacement=true;
 			}
 			key=key.replace(DOUBLE_BACKSLASH_BACKTICK, BACKTICK);
-			keys[i++]=key;
+			if(JSQLUtil.isInteger(key)&&!isReplacement){
+				keys[i++]=new JsonQueryToken<Integer>(Integer.valueOf(key));
+			}else{
+				keys[i++]=new JsonQueryToken<String>(key);
+			}
+			isReplacement=false;
 		}
 		return keys;
 	}
-	
-	private JsonQueryNode path(JsonQueryNode node, Object[] keys, boolean addTreeInfo){
+
+	private JsonQueryNode path(JsonQueryNode node, JsonQueryToken<?>[] keys, boolean addTreeInfo){
 		try{
 			int i=0;
 			for(i=0;i<keys.length;i++){
 				JsonQueryNode nextNode=null;
-				if(JSQLUtil.isInteger((String)keys[i])){
-					nextNode = (JsonQueryNode) node._(Integer.parseInt((String)keys[i]));
+				if(keys[i].type.equals("Number")){
+					nextNode = (JsonQueryNode) node._(keys[i].num());
+					if(!nextNode.exists()){
+						nextNode = (JsonQueryNode) node._(String.valueOf(keys[i].num()));
+					}
 				}else{
-					nextNode = (JsonQueryNode) node._((String)keys[i]);
+					nextNode = (JsonQueryNode) node._(keys[i].str());
 				}
-				if(nextNode!=null&&addTreeInfo){
-						nextNode.key=(String)keys[i];
+				if(nextNode.exists()&&addTreeInfo){
+					nextNode.key=keys[i].str();
 					nextNode.antenode=node;
 				}
 				node=nextNode;
-				if(node==null)break;
+				if(!nextNode.exists())break;
 			}
-			if(node!=null)return node;
+			if(node.exists())return node;
 		}catch(Throwable e){
 			handleException(e);
 		}
 		return new JsonQueryNode(null,null);
 	}
 	
-	// Multinode: get or create a path
-	
+	private List<String> fragmentOnQuotedKeys(String path){
+		Pattern pattern = Pattern.compile(KEYQUOTES);
+		Matcher matcher = pattern.matcher(path);
+
+		List<String> tokens = new ArrayList<String>();
+
+		String lastFragment = EMPTY;
+		int index=0;
+		int lastIndex=0;
+		int group=0;
+		int capture_group=0;
+		boolean someGroupIsCaptured=false;
+
+		while (matcher.find()) {
+			String groupStr = matcher.group(0);
+			if(groupStr.equals(DOUBLE_BACKTICK)){
+				group=1;
+			}else{
+				group=2;
+			}
+			if(!someGroupIsCaptured||group==capture_group){
+				index=matcher.start();
+				String token = path.substring(lastIndex,index);
+				tokens.add(token);
+				lastIndex=matcher.end();
+				capture_group=group;
+				someGroupIsCaptured = !someGroupIsCaptured;
+				// special case 1 (captured ` found \``)
+			}else if(group==1&&capture_group==2){  
+				index=matcher.start()+1;
+				String token = path.substring(lastIndex,index);
+				tokens.add(token);
+				lastIndex=index+1;
+				someGroupIsCaptured = !someGroupIsCaptured;
+			}
+		}
+		if(someGroupIsCaptured){
+			return null;
+		}
+		if(lastIndex<path.length()){
+			lastFragment = path.substring(lastIndex,path.length());
+		}else{
+			lastFragment=EMPTY;
+		}
+		tokens.add(lastFragment);
+		return tokens;
+	}
+
+	// node: get or create a path
 	/* (non-Javadoc)
 	 * @see JsonQuery#node(java.lang.String)
 	 */
 	@Override
 	public JsonQuery node(String path) {
-		String[] keys = getKeys(path);
+		JsonQueryToken<?>[] keys = getKeys(path);
 		JsonQueryNode node = this;
 		try{
 			int i=0;
 			for(i=0;i<keys.length;i++){
-				if(JSQLUtil.isInteger(keys[i])){
-					int index = Integer.parseInt(keys[i]);
+				if(!(keys[i].type.equals("String"))){
+					int index = keys[i].num();
 					JsonQueryNode nextNode = (JsonQueryNode) node._(index);
+					if(!nextNode.exists()){
+						nextNode = (JsonQueryNode) node._(String.valueOf(index));
+					}
 					if(!nextNode.exists()){
 						if(!(node.element instanceof JsonQueryArray)) {
 							if(node.element==null){
@@ -275,7 +307,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 						nextNode.key=EMPTY;
 						array.set(index,nextNode);
 						if(i+1<keys.length){
-							if(JSQLUtil.isInteger(keys[i+1])){
+							if(!(keys[i+1].type.equals("String"))){
 								nextNode.element=new JsonQueryArray();
 							}else{
 								nextNode.element=new JsonQueryObject();
@@ -284,9 +316,9 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 					}
 					node=nextNode;
 				}else{
-					JsonQueryNode nextNode = (JsonQueryNode) node._(keys[i]);
+					JsonQueryNode nextNode = (JsonQueryNode) node._(keys[i].str());
 					if(!nextNode.exists()){
-						nextNode.key=keys[i];
+						nextNode.key=keys[i].toString();
 						if(!(node.element instanceof JsonQueryObject)) {
 							if(node.element==null){
 								node.element = new JsonQueryObject();
@@ -294,9 +326,9 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 								return new JsonQueryNode(null,null);
 							}
 						}
-						((JsonQueryObject) node.element).put(keys[i],nextNode);
+						((JsonQueryObject) node.element).put(keys[i].toString(),nextNode);
 						if(i+1<keys.length){
-							if(JSQLUtil.isInteger(keys[i+1])){
+							if(!(keys[i+1].type.equals("String"))){
 								nextNode.element=new JsonQueryArray();
 							}else{
 								nextNode.element=new JsonQueryObject();
@@ -312,31 +344,31 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return new JsonQueryNode(null,null);
 	}
-	
+
 	// JQL - JSON QUERY LANGUAGE
-	
+
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public JSQLResultSet<JsonQuery> jsql(String queryString){
-	 return (JSQLResultSet)JSQLEngine.getJQL().execute(this,queryString);
-	 
+		return (JSQLResultSet)JSQLEngine.getJQL().execute(this,queryString);
+
 	}
-	
-	// Multinode gets
-	
+
+	// Get values
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#val()
 	 */
 	@Override
 	public Object val() {
-			return element;
+		return element;
 	}
-	
+
 	@Override
 	public Object getElement() {
-			return element;
+		return element;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#str()
 	 */
@@ -351,7 +383,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return null;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#bool()
 	 */
@@ -362,7 +394,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return false;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#i()
 	 */
@@ -373,7 +405,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return 0;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#l()
 	 */
@@ -384,7 +416,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return 0;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#d()
 	 */
@@ -395,225 +427,129 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return 0;
 	}
-	
-	// Gets for the single node traversal queries
-	
+
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#val(java.lang.String)
 	 */
 	@Override
-	public Object val(String key) {
-		if(element instanceof JsonQueryObject){
-			JsonQueryNode node = (JsonQueryNode)((JsonQueryObject)element).get(key);
-			if(node!=null) return node.element;
-		}
-		return null;
+	public Object val(String path) {
+		return this.get(path).val();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#val(int)
 	 */
 	@Override
 	public Object val(int key) {
-		if(element instanceof JsonQueryArray){
-			if(key<((JsonQueryArray)element).size()){
-				JsonQueryNode node = (JsonQueryNode)((JsonQueryArray)element).get(key);
-				if(node!=null) return node.element;
-			}
-		}
-		return null;
+		return this.get(String.valueOf(key)).val();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#str(java.lang.String)
 	 */
 	@Override
-	public String str(String key) {
-		if(element instanceof JsonQueryObject){
-			JsonQueryNode node = (JsonQueryNode)((JsonQueryObject)element).get(key);
-			if(node!=null){
-				if(node.element instanceof JsonQueryObject||node.element instanceof JsonQueryArray){
-					return node.toJson();
-				}else if(node.element!=null){
-					return node.element.toString();
-				}
-			}
-		}
-		return null;
+	public String str(String path) {
+		return this.get(path).str();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#str(int)
 	 */
 	@Override
 	public String str(int key) {
-		if(element instanceof JsonQueryArray){
-			if(key<((JsonQueryArray)element).size()){
-				JsonQueryNode node = (JsonQueryNode)((JsonQueryArray)element).get(key);
-				if(node!=null){
-					if(node.element instanceof JsonQueryObject||node.element instanceof JsonQueryArray){
-						return node.toJson();
-					}else if(node.element!=null){
-						return node.element.toString();
-					}
-				}
-			}
-		}
-		return null;
+		return this.get(String.valueOf(key)).str();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#bool(java.lang.String)
 	 */
 	@Override
-	public boolean bool(String key){
-		if(element instanceof JsonQueryObject){
-			JsonQueryNode node = (JsonQueryNode)((JsonQueryObject)element).get(key);
-			if(node!=null) return (Boolean)node.element;
-			
-		}
-		return false;
+	public boolean bool(String path){
+		return this.get(path).bool();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#bool(int)
 	 */
 	@Override
 	public boolean bool(int key){
-		if(element instanceof JsonQueryArray){
-			if(key<((JsonQueryArray)element).size()){
-				JsonQueryNode node = (JsonQueryNode)((JsonQueryArray)element).get(key);
-				if(node!=null) return (Boolean)node.element;
-			}
-		}
-		return false;
+		return this.get(String.valueOf(key)).bool();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#i(java.lang.String)
 	 */
 	@Override
-	public int i(String key){
-		if(element instanceof JsonQueryObject){
-			JsonQueryNode node = (JsonQueryNode)((JsonQueryObject)element).get(key);
-			if(node!=null&&node.element!=null) return ((Number)(node.element)).intValue();
-		}
-		return 0;
+	public int i(String path){
+		return this.get(path).i();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#i(int)
 	 */
 	@Override
 	public int i(int key){
-		if(element instanceof JsonQueryArray){
-			if(key<((JsonQueryArray)element).size()){
-				JsonQueryNode node = (JsonQueryNode)((JsonQueryArray)element).get(key);
-				if(node!=null&&node.element!=null) return ((Number)(node.element)).intValue();
-			}
-		}
-		return 0;
+		return this.get(String.valueOf(key)).i();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#l(java.lang.String)
 	 */
 	@Override
-	public long l(String key){
-		if(element instanceof JsonQueryObject){
-				JsonQueryNode node = (JsonQueryNode)((JsonQueryObject)element).get(key);
-				if(node!=null&&node.element!=null) return ((Number)(node.element)).longValue();
-		}
-		return 0;
+	public long l(String path){
+		return this.get(path).l();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#l(int)
 	 */
 	@Override
 	public long l(int key){
-		if(element instanceof JsonQueryArray){
-			if(key<((JsonQueryArray)element).size()){
-					JsonQueryNode node = (JsonQueryNode)((JsonQueryArray)element).get(key);
-					if(node!=null&&node.element!=null) return ((Number)(node.element)).longValue();
-			}
-		}
-		return 0;
+		return this.get(String.valueOf(key)).l();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#d(java.lang.String)
 	 */
 	@Override
-	public double d(String key){
-		if(element instanceof JsonQueryObject){
-			JsonQueryNode node = (JsonQueryNode)((JsonQueryObject)element).get(key);
-			if(node!=null&&node.element!=null) return ((Number)(node.element)).doubleValue();
-		}
-		return 0;
+	public double d(String path){
+		return this.get(path).d();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#d(int)
 	 */
 	@Override
 	public double d(int key){
-		if(element instanceof JsonQueryArray){
-			if(key<((JsonQueryArray)element).size()){
-				JsonQueryNode node = (JsonQueryNode)((JsonQueryArray)element).get(key);
-				if(node!=null&&node.element!=null) return ((Number)(node.element)).doubleValue();
-			}
-		}
-		return 0;
+		return this.get(String.valueOf(key)).d();
 	}
+
+	// Set value
 	
-	// Multinode sets
-	
-	
+	public void setElement(String value){
+		set(JSQLUtil.formatElementFromString(value));
+	}
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#set(java.lang.Object)
 	 */
 	@Override
 	public JsonQuery set(Object value){
 		if(value instanceof JsonQueryNode){
-			value = this;
-		}else{
-			element = formatValue(value);
+			value = ((JsonQueryNode) value).element;
 		}
+		element = formatValue(value);
 		return this;
 	}
 	
-	public void setElement(String value){
-		set(JSQLUtil.formatElementFromString(value));
-	}
-	
 	/* (non-Javadoc)
-	 * @see JsonQuery#jset(java.lang.String)
+	 * @see JsonQuery#set(java.lang.String java.lang.Object)
 	 */
 	@Override
-	public JsonQuery jset(String value){
-		if(value==EMPTY)value="\"\"";
-		String json = "{\"obj\":"+value+"}";
-		try{
-			JsonQueryNode node = getGson().fromJson(json,JsonQueryNode.class);
-			element =  node._("obj").element;
-		}catch(Throwable e){
-			handleException(e);
-		}
-		return this;
-	}
-	
-	// Sets for the single node traversal
-	
-	/* (non-Javadoc)
-	 * @see JsonQuery#set(java.lang.String, java.lang.Object)
-	 */
-	@Override
-	public JsonQuery set(String key, Object value){
-		if(element == null)element = new JsonQueryObject();
-		if(element instanceof JsonQueryObject){
-			((JsonQueryObject)element).set(key,formatValue(value));
-		}
+	public JsonQuery set(String path, Object value){
+		JsonQueryNode node = this.get(path);
+		node.set(value);
 		return this;
 	}
 	
@@ -631,18 +567,28 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	}
 	
 	/* (non-Javadoc)
+	 * @see JsonQuery#jset(java.lang.String)
+	 */
+	@Override
+	public JsonQuery jset(String value){
+		if(value==EMPTY)value="\"\"";
+		String json = "{\"obj\":"+value+"}";
+		try{
+			JsonQueryNode node = getGson().fromJson(json,JsonQueryNode.class);
+			element = node._("obj").element;
+		}catch(Throwable e){
+			handleException(e);
+		}
+		return this;
+	}
+	
+	/* (non-Javadoc)
 	 * @see JsonQuery#jset(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public JsonQuery jset(String key, String value){
-		if(element == null)element = new JsonQueryObject();
-		if(element instanceof JsonQueryObject){
-			try{
-				((JsonQueryObject)element).jset(key,value,getGson());
-			}catch(Throwable e){
-				handleException(e);
-			}
-		}
+	public JsonQuery jset(String path, String value){
+		JsonQueryNode node = this.get(path);
+		node.jset(value);
 		return this;
 	}
 	
@@ -663,12 +609,35 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		return this;
 	}
 	
+	/* (non-Javadoc)
+	 * @see JsonQuery#put(java.lang.String, java.lang.Object)
+	 */
+	@Override
+	public JsonQuery put(String key, Object value){
+		if(element == null)element = new JsonQueryObject();
+		if(element instanceof JsonQueryObject){
+			((JsonQueryObject)element).set(key,formatValue(value));
+		}
+		return this;
+	}
 	
+	/* (non-Javadoc)
+	 * @see JsonQuery#jput(java.lang.String, java.lang.String)
+	 */
+	@Override
+	public JsonQuery jput(String key, String value){
+		if(element == null)element = new JsonQueryObject();
+		if(element instanceof JsonQueryObject){
+			try{
+				((JsonQueryObject)element).jset(key,value,getGson());
+			}catch(Throwable e){
+				handleException(e);
+			}
+		}
+		return this;
+	}
 	
-	// adds for multinode and single node traversal
-	
-	
-	
+	// add an array element
 	/* (non-Javadoc)
 	 * @see JsonQuery#add(java.lang.Object)
 	 */
@@ -690,7 +659,6 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 	 */
 	@Override
 	public JsonQuery add(int i,Object value){
-		
 		if(element == null && i==0)element = new JsonQueryArray();
 		if(element instanceof JsonQueryArray){
 			try{
@@ -741,29 +709,43 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return this;
 	}
-	
+
 	// Removing elements
 	
 	/* (non-Javadoc)
-	 * @see JsonQuery#toNull()
+	 * @see JsonQuery#clear()
 	 */
 	@Override
-	public JsonQuery toNull(){
-		this.element=null;
+	public JsonQuery clear(){
+		this.element = null;
 		return this;
 	}
-	
+
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#remove(java.lang.String)
 	 */
 	@Override
-	public JsonQuery remove(String key){
-		if(element instanceof JsonQueryObject){
-			((JsonQueryObject)element).remove(key);
+	public JsonQuery remove(String path){
+		JsonQueryToken<?>[] keys = getKeys(path);
+		JsonQueryNode node = path(this,keys,true);
+		if(!node.exists()){
+			return this;
+		}
+		JsonQueryNode anode = node.antenode;
+		if(anode.element instanceof JsonQueryObject){
+			if(((JsonQueryObject)anode.element).containsValue(node)){
+				((JsonQueryObject)anode.element).remove(node);
+			}
+		}
+		if(anode.element instanceof JsonQueryArray){
+			if(((JsonQueryArray)anode.element).contains(node)){
+				((JsonQueryArray)anode.element).remove(node);
+			}
 		}
 		return this;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#remove(int)
 	 */
@@ -774,9 +756,9 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return this;
 	}
-	
+
 	// Iterating
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#each()
 	 */
@@ -788,16 +770,25 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		if(element instanceof JsonQueryObject){
 			JsonQueryArray  array = new JsonQueryArray();
 			for (Entry<String, JsonQueryNode> entry : ((JsonQueryObject)element).entrySet()) {
-			    String key = entry.getKey();
-			    JsonQueryNode node = (JsonQueryNode)entry.getValue();
-			    node.key=key;
-			    array.add(node);
+				String key = entry.getKey();
+				JsonQueryNode node = (JsonQueryNode)entry.getValue();
+				node.key=key;
+				array.add(node);
 			}
 			return array;
 		}
 		return new JsonQueryArray();
 	}
-	
+
+	/* (non-Javadoc)
+	 * @see JsonQuery#each(java.lang.String)
+	 */
+	@Override
+	public JsonQueryArray each(String path){
+		JsonQueryNode node = this.get(path);
+		return node.each();
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public ArrayList<Object> getChildNodes() {
@@ -807,10 +798,10 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		if(element instanceof JsonQueryObject){
 			ArrayList<Object>  array = new ArrayList<Object>();
 			for (Entry<String, JsonQueryNode> entry : ((JsonQueryObject)element).entrySet()) {
-			    String key = entry.getKey();
-			    JsonQueryNode node = (JsonQueryNode)entry.getValue();
-			    node.key=key;
-			    array.add(node);
+				String key = entry.getKey();
+				JsonQueryNode node = (JsonQueryNode)entry.getValue();
+				node.key=key;
+				array.add(node);
 			}
 			return array;
 		}
@@ -825,7 +816,7 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		// TODO this is a stub
 		return null;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#hasNext()
 	 */
@@ -838,9 +829,9 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return false;
 	}
-	
+
 	// Type Determination
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#exists()
 	 */
@@ -849,7 +840,16 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		if(key==null)return false;
 		return true;
 	}
-	
+
+	/* (non-Javadoc)
+	 * @see JsonQuery#exists(java.lang.String)
+	 */
+	@Override
+	public boolean exists(String path){
+		JsonQueryNode node = this.get(path);
+		return node.exists();
+	}
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#type()
 	 */
@@ -869,7 +869,16 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 			return "null";
 		}
 	}
-	
+
+	/* (non-Javadoc)
+	 * @see JsonQuery#type(java.lang.String)
+	 */
+	@Override
+	public String type(String path){
+		JsonQueryNode node = this.get(path);
+		return node.type();
+	}
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#isLeaf()
 	 */
@@ -879,14 +888,19 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 			return false;
 		return true;
 	}
-	
-	private  Object formatValue(Object value){
-		if(value instanceof Number){
-			value = new JsonQueryNumber(new LazilyParsedNumber(value.toString()));
+
+	/* (non-Javadoc)
+	 * @see JsonQuery#isLeaf(java.lang.String)
+	 */
+	@Override
+	public boolean isLeaf(String path){
+		JsonQueryNode node = this.get(path);
+		if(!node.exists()){
+			return false;
 		}
-		return  value;
+		return node.isLeaf();
 	}
-		
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#isObject()
 	 */
@@ -896,7 +910,16 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 			return true;
 		return false;
 	}
-		
+
+	/* (non-Javadoc)
+	 * @see JsonQuery#isObject(java.lang.String)
+	 */
+	@Override
+	public boolean isObject(String path){
+		JsonQueryNode node = this.get(path);
+		return node.isObject();
+	}
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#isArray()
 	 */
@@ -906,16 +929,32 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 			return true;
 		return false;
 	}
-	
+
+	/* (non-Javadoc)
+	 * @see JsonQuery#isArray(java.lang.String)
+	 */
+	@Override
+	public boolean isArray(String path){
+		JsonQueryNode node = this.get(path);
+		return node.isArray();
+	}
+
+	private  Object formatValue(Object value){
+		if(value instanceof Number){
+			value = new JsonQueryNumber(new LazilyParsedNumber(value.toString()));
+		}
+		return  value;
+	}
+
 	// Exception Handling
-	
+
 	private void handleException(Throwable e){
 		System.out.println("error");
 		e.printStackTrace();
 	}
-	
+
 	// Write to JSON string
-	
+
 	/* (non-Javadoc)
 	 * @see JsonQuery#toJson()
 	 */
@@ -928,11 +967,23 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		}
 		return null;
 	}
-	
+
+	/* (non-Javadoc)
+	 * @see JsonQuery#toJson()
+	 */
+	@Override
+	public String toJson(String path){
+		JsonQueryNode node = this.get(path);
+		if(!node.exists()){
+			return null;
+		}
+		return node.toJson();
+	}
+
 	private void out(Object o){
 		System.out.println(o);
 	}
-	
+
 	private void listIt(List list,String start,String loopStr){
 		out(start);
 		for (Object elem : list) {
@@ -941,5 +992,5 @@ public class JsonQueryNode extends JsonQuery implements JSQLNode{
 		out("---------------------------------");
 		out("");
 	}
-	
+
 }
