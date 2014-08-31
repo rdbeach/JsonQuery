@@ -16,9 +16,11 @@ public class JSQLParser {
 	private static final String BRACKETS_REGEX = "\\[]";
 	private static final String PLACEHOLDER_REGEX = "``(?!`)";
 	private static final String PATHQUOTES = "``(?!`)";
+	private static final String STRINGQUOTES = "''(?!')";
 	private static final String EXPRESSIONQUOTES  = "``(?!`)|(?<!\\\\)\\[|(?<!\\\\)]|''(?!')";
 	private static final String SELECT_CLAUSE_REGEX= "``(?!`)|''(?!')|\\[|]|\\)|\\(|,";
-
+	private static final String ASREGEX = "\\[|]|(?<!\\S)AS(?!\\S)";
+	
 	// keyword , precedence
 	private static final Object[][] SELECT_STRUCTURE = {
 		{"select",0},
@@ -57,6 +59,7 @@ public class JSQLParser {
 	private static final String WHERE = "where";
 	private static final String ORDER_BY = "order by";
 	private static final String LIMIT = "limit";
+	private static final String AS = "AS";
 	
 	private static final String EMPTY = "";
 	private static final String SELECTOR_DELIMITER = ",";
@@ -71,18 +74,10 @@ public class JSQLParser {
 	private static final String BRACKETS_PLACEHOLDER = "[]";
 	
 	private static final String KEY_PLACEHOLDER = "``";
-	private static final String EKY_PLACEHOLDER2 = "```";
+	private static final String KEY_PLACEHOLDER2 = "```";
 	
 	private static final int PATH= 1;
 	private static final int STRING = 0;
-	
-	private static final int STRING_GROUP_2 = 1;
-	private static final int PATH_GROUP_2 = 2;
-	private static final int STRING_GROUP_1 = 3;
-	private static final int PATH_GROUP_1 = 4;
-	
-	private static final int SELECTOR_GROUP = 6;
-	
 	
 	private static final String NOT_OPERATOR = "!";
 	private static final String ALL_OPERATOR = "*";
@@ -318,6 +313,53 @@ public class JSQLParser {
 	    return tokenList;
 	}
 	
+	private List<String> splitOnAs(String selector){
+		Pattern pattern = Pattern.compile(ASREGEX, Pattern.CASE_INSENSITIVE);
+	    Matcher matcher = pattern.matcher(selector);
+	     
+	    List<String> tokenList = new ArrayList<String>();
+	    
+	    Stack<String> stack = new Stack<String>();
+	    int lastIndex=0;
+	    String clause = EMPTY;
+	    String groupStr = "";
+	    
+	    // matching []
+	    
+	    out("Parsing the expression:\n");
+	    while (matcher.find()) {
+	    	
+	    	groupStr = matcher.group(0);
+	    	out("Captured: " + groupStr + " at index: " + matcher.start());
+	    	
+	    	if(groupStr.equals(SELECTOR_LEFT_BRACKET)){
+	    			stack.push(SELECTOR_LEFT_BRACKET);
+		    	
+		    }else if(groupStr.equals(SELECTOR_RIGHT_BRACKET)){
+		    		stack.pop();
+	    	}else if(groupStr.equalsIgnoreCase(AS)){
+	    		if(stack.empty()){
+	    			tokenList.add(selector.substring(lastIndex,matcher.start()).trim());
+	    			lastIndex=matcher.end();
+	    		}
+	    	}
+	    }
+	    
+	    if(!stack.isEmpty()){
+	    	err("Jsql syntax error. delimeter missing");
+	    	return null;
+	    }
+	    
+	    if(lastIndex<selector.length()){
+	    	clause = selector.substring(lastIndex,selector.length()).trim();
+	    }else{
+	    	clause=EMPTY;
+	    }
+	    tokenList.add(clause);
+	 
+	    return tokenList;
+	}
+	
 	private String quotes(int i , JSQLTokenMap<Integer,String> queryStringMap){
 		if(queryStringMap.type.get(i)==PATH){
 			return KEY_DOUBLE_QUOTE;
@@ -362,12 +404,14 @@ public class JSQLParser {
 		
 		// Splice out bracketed parts
 		
+		
+		
 		List<String>tokenList2 = splitOnBrackets(str.toString());
 		
 		// reassemble
 		
-		tokens=tokenList2.toArray(new String[tokenList.size()]);
-		
+		tokens=tokenList2.toArray(new String[tokenList2.size()]);
+
 		str = new StringBuilder(EMPTY);
 		for (int i = 0; i < tokens.length; i+=2) {
 		    str.append(tokens[i]);
@@ -498,84 +542,6 @@ public class JSQLParser {
 		return tokenMap;
 	}
 	
-	public ArrayList<JSQLTokens> parseSelector(String selector){
-		out("start querySelector:"+selector);
-		
-		ArrayList<JSQLTokens> queryList = new ArrayList<JSQLTokens>();
-		
-		String[] tokensStr=selector.split(PATHQUOTES,-1);
-		
-		StringBuilder str = new StringBuilder(EMPTY);
-		for (int i = 0; i < tokensStr.length; i+=2) {
-		    str.append(tokensStr[i]);
-		    if(i+2<tokensStr.length)
-		    str.append(EKY_PLACEHOLDER2);
-			//out(i+": "+tokenList.get(i));
-		}
-		
-		for(String tokens:tokensStr){
-			out("token:"+tokens);
-		}
-		
-		selector=str.toString();
-		
-		out("Simplified selector:" + selector);
-		
-		
-		for(int i = 0;i<FORBIDDEN_SEQUENCES.length;i++){
-			if(selector.contains(FORBIDDEN_SEQUENCES[i])){
-				err("Jsql syntax error. Forbidden sequence: " + FORBIDDEN_SEQUENCES[i] + ".");
-				return queryList;
-			}
-		}
-		
-		int replacementCount=1;
-		String[] path_selectors = selector.split(SELECTOR_DELIMITER);
-		for(String path_selector:path_selectors){
-			if(path_selector.startsWith(SELECTOR_LEFT_BRACKET)){
-				path_selector = path_selector.substring(1, path_selector.length());
-			}
-			if(path_selector.endsWith(SELECTOR_RIGHT_BRACKET)){
-				path_selector = path_selector.substring(0, path_selector.length()-1);
-			}
-			JSQLTokens tokens = new JSQLTokens();
-			String[] paths = path_selector.split(NOT_OPERATOR);
-			int j = 0;
-			for(String path:paths){
-				out("getTokens: path:" +path);
-				path = path.
-						replaceAll(NOT_BACKSLASH+CHILD_OPERATOR,PATH_DELIMITER+CHILD_OPERATOR+PATH_DELIMITER);
-				if(path.startsWith(PATH_DELIMITER+CHILD_OPERATOR))path = path.substring(1);
-				if(path.endsWith(CHILD_OPERATOR+PATH_DELIMITER))path = path.substring(0,path.length()-1);
-				
-				
-				String[] keys = path.split(NOT_BACKSLASH+PATH_DELIMITER_REGEX,-1);
-				int k = 0;
-				for(String key:keys){
-					out("getTokens: key:" +key);
-					while(key.contains(EKY_PLACEHOLDER2)){
-						key = key.replaceFirst(EKY_PLACEHOLDER2,KEY_QUOTE+tokensStr[replacementCount].
-								replace(DOUBLE_BACKSLASH, QUADRUPLE_BACKSLASH).
-								replace(DOLLARSIGN, DOLLARSIGN_BACKSLASH)+KEY_QUOTE);
-						replacementCount+=2;
-					}
-					keys[k]=key;
-					k++;
-					out(key);
-				}
-				if(j==0){
-					tokens.path=keys;
-				}else{
-					if(tokens.exceptionPaths==null)tokens.exceptionPaths = new ArrayList<String[]>();
-					tokens.exceptionPaths.add(keys);
-				}
-				j++;
-			}
-			queryList.add(tokens);
-		}
-		return queryList;
-	}
-	
 	public JSQLTokenMap<Integer,Object> parseExpression(String expression, JSQLExpression evaluator){
 		
 		Pattern pattern = Pattern.compile(EXPRESSIONQUOTES);
@@ -702,6 +668,104 @@ public class JSQLParser {
 
 	}
 	
+	public ArrayList<JSQLSelector> parseSelector(String selection,ArrayList<String> identifiers){
+		out("start querySelector:"+selection);
+		
+		ArrayList<JSQLSelector> queryList = new ArrayList<JSQLSelector>();
+		
+		String[] tokensStr=selection.split(PATHQUOTES,-1);
+		
+		StringBuilder str = new StringBuilder(EMPTY);
+		for (int i = 0; i < tokensStr.length; i+=2) {
+		    str.append(tokensStr[i]);
+		    if(i+2<tokensStr.length)
+		    str.append(KEY_PLACEHOLDER2);
+			//out(i+": "+tokenList.get(i));
+		}
+		
+		for(String tokens:tokensStr){
+			out("token:"+tokens);
+		}
+		
+		selection=str.toString();
+		
+		out("Simplified selector:" + selection);
+		
+		
+		for(int i = 0;i<FORBIDDEN_SEQUENCES.length;i++){
+			if(selection.contains(FORBIDDEN_SEQUENCES[i])){
+				err("Jsql syntax error. Forbidden sequence: " + FORBIDDEN_SEQUENCES[i] + ".");
+				return queryList;
+			}
+		}
+		
+		int replacementCount=1;
+		String[] path_selectors = selection.split(SELECTOR_DELIMITER);
+		for(String path_selector:path_selectors){
+			List<String> path_components = splitOnAs(path_selector);
+			path_selector = path_components.get(0);
+			String identifier = "";
+			if(path_components.size()>1){
+				identifier=path_components.get(1);
+			}
+			out("ps: " + path_selector+ " identifier: " + identifier);
+			if(path_selector.startsWith(SELECTOR_LEFT_BRACKET)){
+				path_selector = path_selector.substring(1, path_selector.length());
+			}
+			if(path_selector.endsWith(SELECTOR_RIGHT_BRACKET)){
+				path_selector = path_selector.substring(0, path_selector.length()-1);
+			}
+			JSQLSelector selector = new JSQLSelector();
+			selector.target=EMPTY;
+			selector.id=path_selector;
+			String[] paths = path_selector.split(NOT_OPERATOR);
+			int j = 0;
+			for(String path:paths){
+				out("getTokens: path:" +path);
+				path = path.
+						replaceAll(NOT_BACKSLASH+CHILD_OPERATOR,PATH_DELIMITER+CHILD_OPERATOR+PATH_DELIMITER);
+				if(path.startsWith(PATH_DELIMITER+CHILD_OPERATOR))path = path.substring(1);
+				if(path.endsWith(CHILD_OPERATOR+PATH_DELIMITER))path = path.substring(0,path.length()-1);
+				
+				String[] keys = path.split(NOT_BACKSLASH+PATH_DELIMITER_REGEX,-1);
+				if(j==0&&!keys[0].equals(FROM)&&identifiers.contains(keys[0])){
+					selector.target=keys[0];
+					if(path.indexOf(".")==-1||path.indexOf(".")+1==path.length()){
+						err("Jsql syntax error. Selector: " + keys[0]);
+						return queryList;
+					}
+					keys=path.substring(path.indexOf(".")+1).split(NOT_BACKSLASH+PATH_DELIMITER_REGEX,-1);
+				}
+				
+				int k = 0;
+				for(String key:keys){
+					out("getTokens: key:" +key);
+					while(key.contains(KEY_PLACEHOLDER2)){
+						key = key.replaceFirst(KEY_PLACEHOLDER2,KEY_QUOTE+tokensStr[replacementCount].
+								replace(DOUBLE_BACKSLASH, QUADRUPLE_BACKSLASH).
+								replace(DOLLARSIGN, DOLLARSIGN_BACKSLASH)+KEY_QUOTE);
+						replacementCount+=2;
+					}
+					
+					keys[k]=key;
+					k++;
+					
+					out(key);
+				}
+				if(j==0){
+					selector.identifier=identifier;
+					selector.path=keys;
+				}else{
+					if(selector.exceptionPaths==null)selector.exceptionPaths = new ArrayList<String[]>();
+					selector.exceptionPaths.add(keys);
+				}
+				j++;
+			}
+			queryList.add(selector);
+		}
+		return queryList;
+	}
+	
 	public List<String> parseSelectClause(String expression){
 		
 		Pattern pattern = Pattern.compile(SELECT_CLAUSE_REGEX);
@@ -804,6 +868,10 @@ public class JSQLParser {
 		return key;
 	}
 	
+	public String formatForOutput(String expr){
+		return expr.replaceAll(STRINGQUOTES, "'");
+	}
+	
 	private <T> boolean contains(T[] array, T lastKey){
 		boolean contains=false;
 		for (int i = 0; i < array.length; i++) {
@@ -821,11 +889,11 @@ public class JSQLParser {
 	
 	//TODO delete
 	private void out(Object msg){
-		System.out.println(msg);
+		//System.out.println(msg);
 	}
 	
 	private void out(Object msg, boolean inline){
-		System.out.print(msg);
+		//System.out.print(msg);
 	}
 	private void listIt(List list,String start,String loopStr){
 		out(start);

@@ -90,10 +90,12 @@ public class JSQLExpression {
 	 * All defined functions with name and implementation.
 	 */
 	private Map<String, Function> functions = new HashMap<String, JSQLExpression.Function>();
+	
 	/**
-	 * A list of variable names in the expression.
+	 * All with name and value.
 	 */
-	private List<String> variableList = new ArrayList<String>();
+	private Map<String, BigDecimal> variables = new HashMap<String, BigDecimal>();
+	
 	/**
 	 * All non string defined variables with name and value.
 	 */
@@ -297,9 +299,11 @@ public class JSQLExpression {
 		    	}
 		    	if(!clause.trim().equals("")){
 		    		if(!clause.trim().startsWith("ARG")){
+		    			variables.put(dummyVar(count),null);
 		    			tokenList.add(dummyVar(count++));
 		    			putByType(variablesMap,clause.trim());
 		    		}else{
+		    			variables.put(clause.trim(),null);
 		    			tokenList.add(clause.trim());
 		    		}
 		    		
@@ -314,9 +318,11 @@ public class JSQLExpression {
 		    if(beginClause<input.length()){
 		    	clause = input.substring(beginClause,input.length());
 		    	if(!clause.trim().startsWith("ARG")){
+		    		variables.put(dummyVar(count),null);
 	    			tokenList.add(dummyVar(count++));
 	    			putByType(variablesMap,clause.trim());
 	    		}else{
+	    			variables.put(clause.trim(),null);
 	    			tokenList.add(clause.trim());
 	    		}
 			}
@@ -428,10 +434,8 @@ public class JSQLExpression {
 		addOperator(new Operator("and", 4, false) {
 			@Override
 			public BigDecimal eval(Token<?> v1, Token<?> v2) {
-				System.out.println("or " + v1.getValue() +" or "+v2.getValue());
 				boolean b1 = !v1.dec().equals(BigDecimal.ZERO);
 				boolean b2 = !v2.dec().equals(BigDecimal.ZERO);
-				//System.out.println("Result: "+b1 && b2 ? BigDecimal.ONE : BigDecimal.ZERO);
 				return b1 && b2 ? BigDecimal.ONE : BigDecimal.ZERO;
 			}
 		});
@@ -446,10 +450,8 @@ public class JSQLExpression {
 		addOperator(new Operator("or", 2, false) {
 			@Override
 			public BigDecimal eval(Token<?> v1, Token<?> v2) {
-				System.out.println("or " + v1.getValue() +" or "+v2.getValue());
 				boolean b1 = !v1.dec().equals(BigDecimal.ZERO);
 				boolean b2 = !v2.dec().equals(BigDecimal.ZERO);
-				//System.out.println("result: " + (b1 || b2 ? BigDecimal.ONE : BigDecimal.ZERO));
 				return b1 || b2 ? BigDecimal.ONE : BigDecimal.ZERO;
 			}
 		});
@@ -481,12 +483,9 @@ public class JSQLExpression {
 		addOperator(new Operator("=", 7, false) {
 			@Override
 			public BigDecimal eval(Token<?> v1, Token<?> v2) {
-				System.out.println("single equals: " + v1.getValue() +" = "+v2.getValue());
 				if(v1.type.equals("String")&&v2.type.equals("String")){
-					System.out.println("They are both strings.");
 					return v1.str().equals(v2.str())? BigDecimal.ONE : BigDecimal.ZERO;
 				}
-				System.out.println("Not both strings.");
 				return v1.dec().compareTo(v2.dec()) == 0 ? BigDecimal.ONE : BigDecimal.ZERO;
 			}
 		});
@@ -722,6 +721,8 @@ public class JSQLExpression {
 		//String token = tokenizer.next();
 			if (isNumber(token)) {
 				outputQueue.add(token);
+			} else if (variables.containsKey(token)) {
+				outputQueue.add(token);
 			} else if (numeric_variables.containsKey(token)) {
 				outputQueue.add(token);
 			} else if (string_variables.containsKey(token)) {
@@ -796,15 +797,22 @@ public class JSQLExpression {
 		clear();
 		Tokenizer tokenizer = new Tokenizer(expression);
 		tokens = tokenizer.tokenizeSimplifiedExpression(variablesMap,count);
+		getRPN();
 	}
 	
 	public List<String> getContext(){
 		return tokens;
 	}
 	
-	public void setContext(String expression,List<String> tk){
+	public void setContext(List<String> tk){
 		clear();
 		tokens=tk;
+		for(String token:tokens){
+			if(token.startsWith("ARG")){
+				variables.put(token, null);
+			}
+		}
+		getRPN();
 	}
 	
 	public BigDecimal eval(List<Object> values){
@@ -1039,7 +1047,7 @@ public class JSQLExpression {
 	//}
 	
 	private void clear(){
-		variableList.clear();
+		variables.clear();
 		numeric_variables.clear();
 		string_variables.clear();
 		rpn=null;
@@ -1052,7 +1060,7 @@ public class JSQLExpression {
 	 *
 	 * @return The cached RPN instance.
 	 */
-	private List<String> getRPN() {
+	public List<String> getRPN() {
 		if (rpn == null) {
 			rpn = shuntingYard();
 		}
@@ -1073,10 +1081,10 @@ public class JSQLExpression {
 		return result;
 	}
 	public void out(Object msg){
-		System.out.println(msg);
+		//System.out.println(msg);
 	}
 	public void out2(Object msg){
-		System.out.print(msg);
+		//System.out.print(msg);
 	}
 	private void listIt(List list,String start,String loopStr){
 		out(start);

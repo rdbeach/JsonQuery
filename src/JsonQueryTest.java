@@ -190,6 +190,18 @@ public class JsonQueryTest {
             
             // Hello world
             
+            // Adds a translation to the translations array
+            
+        	$.add("data.translations","Bonjour:hello");
+                
+            // Adds a Json Object to the second position in the translations array.
+                
+	        $.jadd("data.translations",1,"{\"french\":\"Bonjour\",\"english\":\"hello\"}");
+	        
+	        out(
+	        	$.get("data.translations").toJson()
+	        );
+            
             
             
             // Building JSON with single nodes:
