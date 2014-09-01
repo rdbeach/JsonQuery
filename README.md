@@ -412,14 +412,14 @@ The variable msg will contain the JSON string above.
 		add($.obj().
 			put("b", "c").
 			put("d",$.arr().
-				add("e").
-				add("f")
+				add(1000).
+				add(true)
 	    		)
 		).add("g");
 	        
 	out(json.toJson());
 	
-	// ["a",{"b":"c","d":["e","f"]},"g"]
+	// ["a",{"b":"c","d":[1000,true]},"g"]
 	
 	
 	
