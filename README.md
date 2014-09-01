@@ -216,11 +216,15 @@ The variable msg will contain the JSON string above.
 
 
 
-#### Use a JSON string to add to the JsonQuery object tree (with jset):
+#### Use a JSON string to add to the JsonQuery object tree (with jput):
+
+	// jput, jadd, and jset function like their equivalents, put, add, and set, except that they take a JSON
+	
+	// string as the "value" argument.
                     
         // Add my hobbies
         
-        $.jset("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
+        $.jput("hobbies","[\"tennis\",\"hiking\",\"swimming\"]");
                 
         // Print the whole thing again
         
