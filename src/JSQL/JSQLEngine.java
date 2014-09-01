@@ -83,7 +83,7 @@ public class JSQLEngine {
 		if(clauses.containsKey(FROM))fromClause=clauses.get(FROM);
 		ArrayList<JSQLNode> resultVector = new ArrayList<JSQLNode>();
 		resultVector.add(node);
-		ArrayList<JSQLSelector> selectors = jsqlParser.parseSelector(fromClause,resultManager.fromClauseResultSetIdentifiers);
+		ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection(fromClause,resultManager.fromClauseResultSetIdentifiers);
 		executeSelection(resultVector, FROM, selectors);
 
 		out("UPDATE clause");
@@ -92,7 +92,7 @@ public class JSQLEngine {
 			resultManager.getResultSet(FROM).clear();
 			resultVector = new ArrayList<JSQLNode>();
 			resultVector.add(node);
-			selectors = jsqlParser.parseSelector(clauses.get(UPDATE),resultManager.fromClauseResultSetIdentifiers);
+			selectors = jsqlParser.parseSelection(clauses.get(UPDATE),resultManager.fromClauseResultSetIdentifiers);
 			executeSelection(resultVector,FROM,selectors);
 		}
 
@@ -144,23 +144,17 @@ public class JSQLEngine {
 			evaluator = new JSQLExpression();
 
 		JSQLTokenMap<Integer,Object> variableMap = jsqlParser.parseExpression(whereClause,evaluator);
-		List<Object> valsList = new ArrayList<Object>();
 		Map<Integer,ArrayList<JSQLSelector>> selectorsMap = new HashMap<Integer,ArrayList<JSQLSelector>>();
-		List<JSQLResultSet<JSQLNode>> subsetList = new ArrayList<JSQLResultSet<JSQLNode>>();
 		
 		if(variableMap==null)return;
 		
 		int i=0;
 		for(Object variable:variableMap.tokens){
+			out2("var: " + variable + " type: " + variableMap.type.get(i));
 			if(variableMap.type.get(i)==SELECTOR){
-				resultManager.removeResultSet(SUBSELECT);
-				ArrayList<JSQLSelector> selectors = jsqlParser.parseSelector((String)variable,resultManager.fromClauseResultSetIdentifiers);
-				valsList.add(0);
+				ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection((String)variable,resultManager.fromClauseResultSetIdentifiers);
 				selectorsMap.put(i,selectors);
-			}else{
-				valsList.add(variable);
 			}
-			subsetList.add(null);
 			i++;
 		}
 		
@@ -176,16 +170,31 @@ public class JSQLEngine {
 		
 		optimizeExpression();
 		
-		resultManager.initializeFromSetCounts();
-		filterResult(selectorsMap,variableMap,valsList,subsetList);
+		filterResult(variableMap,selectorsMap);
 	}
 	
 	private void filterResult(
-			Map<Integer,ArrayList<JSQLSelector>> selectorsMap,
 			JSQLTokenMap<Integer,Object> variableMap,
-			List<Object> valsList,
-			List<JSQLResultSet<JSQLNode>> subsetList
+			Map<Integer,ArrayList<JSQLSelector>> selectorsMap
 			){
+		
+		Map<Integer,Object> valsList = new HashMap<Integer,Object>();
+		List<JSQLResultSet<JSQLNode>> subsetList = new ArrayList<JSQLResultSet<JSQLNode>>();
+		
+		int i=0;
+		for(Object variable:variableMap.tokens){
+			if(variable!=null){
+				if(variableMap.type.get(i)==SELECTOR){
+					valsList.put(i,0);
+				}else{
+					valsList.put(i,variable);
+				}
+			}
+			subsetList.add(null);
+			i++;
+		}
+		
+		resultManager.initializeFromSetCounts();
 		ArrayList<JSQLNode> resultVector;
 		while ((resultVector = resultManager.getResultVector())!=null) {
 			boolean pass = false;
@@ -195,7 +204,7 @@ public class JSQLEngine {
 				JSQLResultSet<JSQLNode> resultSet = resultManager.getResultSet(SUBSELECT );
 				if(!resultSet.isEmpty()){
 					pass=true;
-					valsList.set(entry.getKey(),0);
+					valsList.put(entry.getKey(),0);
 					subsetList.set(entry.getKey(),resultSet);
 				}else{
 					pass=false;
@@ -260,7 +269,7 @@ public class JSQLEngine {
 				boolean isExpression = isExpressionList.get(i);
 				if(isExpression==false){
 					out("Simple selection");
-					ArrayList<JSQLSelector> selectors = jsqlParser.parseSelector(expr,resultManager.fromClauseResultSetIdentifiers);
+					ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection(expr,resultManager.fromClauseResultSetIdentifiers);
 					executeSelection(resultVector, SELECT, selectors);
 				}else{
 					JSQLTokenMap<Integer,Object> variableMap = variableMaps.get(i);
@@ -270,19 +279,19 @@ public class JSQLEngine {
 					
 					boolean pass = false;
 					List<JSQLResultSet<JSQLNode>> subsetList = new ArrayList<JSQLResultSet<JSQLNode>>();
-					List<Object> valsList = new ArrayList<Object>();
+					Map<Integer,Object> valsList = new HashMap<Integer,Object>();
 					int j=0;
 					for(Object variable:variableMap.tokens){
 						if(variableMap.type.get(j)==SELECTOR){
 							//JSQLResultSet<JSQLNode> resultSet = new JSQLResultSet<JSQLNode>();
 							resultManager.removeResultSet(SUBSELECT );
-							ArrayList<JSQLSelector> selectors = jsqlParser.parseSelector((String)variable,resultManager.fromClauseResultSetIdentifiers);
+							ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection((String)variable,resultManager.fromClauseResultSetIdentifiers);
 							executeSelection(resultVector, SUBSELECT, selectors);
 							JSQLResultSet<JSQLNode> resultSet = resultManager.getResultSet(SUBSELECT );
 							out("Exec Selectlause: Got resultset");
 							if(!resultSet.isEmpty()){
 								pass=true;
-								valsList.add(0);
+								valsList.put(j,0);
 								subsetList.add(resultSet);
 							}else{
 								out("Resultset is empty!!");
@@ -290,12 +299,11 @@ public class JSQLEngine {
 								break;
 							}
 						}else{
-							valsList.add(variable);
+							valsList.put(j,variable);
 							subsetList.add(null);
 						}
 						j++;
 					}
-					listIt(valsList,"Exec SelectClause: ValsList:\n------------------------------","value: ");
 					if(pass){
 						iterateOverSubsets(variableMap,valsList,subsetList,0,pass,expr);
 					}
@@ -385,7 +393,7 @@ public class JSQLEngine {
 	}
 	
 	private boolean iterateOverSubsets(JSQLTokenMap<Integer,Object> variableMap,
-			List<Object> valsList,
+			Map<Integer,Object> valsList,
 			List<JSQLResultSet<JSQLNode>> subsetList,
 			int i,
 			boolean pass,
@@ -403,7 +411,7 @@ public class JSQLEngine {
 					JSQLNode subnode = resultSet.get(j);
 					if(subnode.isLeaf()){
 						out("Adding node to valslist: "+subnode.getElement());
-						valsList.set(i,subnode.getElement());
+						valsList.put(i,subnode.getElement());
 					}else{
 						out("Subnode is not a leaf");
 						pass=false;

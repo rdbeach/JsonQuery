@@ -1,5 +1,6 @@
 package src;
 import java.io.IOException;
+
 import org.adrianwalker.multilinestring.Multiline;
 
 /*
@@ -147,13 +148,10 @@ public class JsonQueryTest {
 	        out($.toJson());
 	                
 	        // {"empID":100,"address":{"zipcode":91011,"city":"san fran","street":"Foolhill Blvd"},"cities":["Los Angeles","New York"],"hobbies":["tennis","hiking"],"permanent":false,"name":"Robert","phoneNumbers":[5555555,9876543],"properties":{"salary":"$6000","age":"28 years"},"employed":false}
-			
-			// Go deeper in the tree
-			$.get("properties").jput("pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
-			out($.toJson("properties"));
+		
 			
 			// Add more to the JSON object tree
-	        $.jset("properties.pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
+	        $.jput("properties.pets","{\"cat\":\"Mr Wiggles\",\"dog\":\"Happy\"}");
 	                
 	        out($.toJson("properties"));
 	                
@@ -205,6 +203,19 @@ public class JsonQueryTest {
             
             
             // Building JSON with single nodes:
+	        
+	        JsonQuery json = $.arr();
+	        json.
+	        	add("a").
+	        	add($.obj().
+	        		put("b", "c").
+	        		put("d",$.arr().
+	        			add(1000).
+	        			add(true)
+    				)
+	        	).add("g");
+	        
+	        out(json.toJson());
             
             $ = JsonQuery.fromJson("{}");
             

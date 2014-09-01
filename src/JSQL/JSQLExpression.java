@@ -45,6 +45,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -815,11 +816,9 @@ public class JSQLExpression {
 		getRPN();
 	}
 	
-	public BigDecimal eval(List<Object> values){
-		int i = 0;
-		for(Object val:values){
-			setByType(val,i);
-			i++;
+	public BigDecimal eval(Map<Integer,Object> valuesMap){
+		 for (Entry<Integer, Object> entry : valuesMap.entrySet()) {
+			setByType(entry.getValue(),entry.getKey());
 		}
 		return eval();
 	}

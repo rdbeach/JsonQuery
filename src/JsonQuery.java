@@ -40,7 +40,7 @@ public abstract class JsonQuery {
 	public abstract JsonQueryNode obj();
 	
 	public abstract JsonQueryNode arr();
-
+	
 	public abstract JsonQuery _(String key);
 
 	public abstract JsonQuery _(int key);

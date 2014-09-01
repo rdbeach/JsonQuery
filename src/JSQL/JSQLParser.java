@@ -668,7 +668,7 @@ public class JSQLParser {
 
 	}
 	
-	public ArrayList<JSQLSelector> parseSelector(String selection,ArrayList<String> identifiers){
+	public ArrayList<JSQLSelector> parseSelection(String selection,ArrayList<String> identifiers){
 		out("start querySelector:"+selection);
 		
 		ArrayList<JSQLSelector> queryList = new ArrayList<JSQLSelector>();
