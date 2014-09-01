@@ -438,10 +438,12 @@ The variable msg will contain the JSON string above.
 						add("ios");
 	$.put("access_token", "access_token");
 	
-	
 	out($.toJson());
 	
 	// {"access_token":"access_token","notification":{"sound":"sounds/ararmsound.wav","message":"test","target":{"apps":[{"id":"app_id","platforms":["ios"]}]}}}
+		
+		
+		
 		
 	// .....with jput
 	
