@@ -525,110 +525,110 @@ Comming soon.
 
 Brief description of the methods. Will make this more detailed later, as this code is still in development. Look at the java code for specifics.
 
-                Static Methods:
-                JsonQuery.fromJson: Converts a JSON string to a JsonQuery object tree
-                
-                
-                JsonQuery Class Members
-                
-                toJson: turns any part of the JsonQuery object tree into a JSON string 
+        Static Methods:
+        JsonQuery.fromJson: Converts a JSON string to a JsonQuery object tree
+        
+        
+        JsonQuery Class Members
+        
+        toJson: turns any part of the JsonQuery object tree into a JSON string 
 
 
 
-                Tree traversal:
-                
-                get: finds a node JsonQuery Object tree. 
-                node: finds or creates a node in the JsonQuery Object tree.
-                 _: gets the next node in the JsonQuery Object tree (mostly used internally)
-                 
-                 
-                JSQL queryies
-                
-                jsql: returns a JSQLResultSet<JsonQuery>, which as a list of matching JsonQuery nodes.
-                
-                
-                
-                Getting values:
-                
-               
-                val: gets a node (returns object)
-                str: gets a node in string format, regardless of type.
-		bool: gets a boolean node (type sensitive)
-                i: gets an integer node (type sensitive)
-                d: gets a double node (type sensitive)
-                l: gets a long node (type sensitive)
-                getKey: gets the key for current node
-                
-                
-                
-                Updating Nodes: (That already exist)
-                
-                set: sets a value
-                jset: set a value from a JSON string
-                
-                
-                Updating/Adding Nodes: (That may or may not exist)
-                
-                put: sets a value
-                jput: set a value from a JSON string
-                
-                
-                Array Specific Setting Methods:
-                
-                add: adds a value
-                jadd: adds a value from a JSON string
-                
-                
-                
-                Creating Nodes:
-                
-                obj: creates an empty object node
-                arr: creates an empty array node
-                
-                
-                
-                Iteration:
-                
-                each: gets each element of an array or each member of an object
-                
-                
-                
-                Removing:
-                
-                remove(string): Removing an object member
-                remove(int): Removing an array member
-                
-                
-                
-                Clearing
-                
-                clear() clears a node
-                
-                
-                
-                Testing Existence
-                
-                exists: true or false depending on the nodes existence.
-                
-                
-                Type determination:
-                
-                type : gets the type of the current node as a string.
-                	Possible types are:
-                	object
-                	array
-                	string
-                	number
-                	boolean
-                	null
-                	
-                isLeaf: returns true if the node is a leaf (endpoint)
-                isObject: returns true if the node is an object
-                isArray: returns true if the node is an array
-                
-                
-                
-		Inherited Methods: JsonQueryObject extends HashMap, and JsonQueryArray extends ArrayList.
+        Tree traversal:
+        
+        get: finds a node JsonQuery Object tree. 
+        node: finds or creates a node in the JsonQuery Object tree.
+         _: gets the next node in the JsonQuery Object tree (mostly used internally)
+         
+         
+        JSQL queryies
+        
+        jsql: returns a JSQLResultSet<JsonQuery>, which as a list of matching JsonQuery nodes.
+        
+        
+        
+        Getting values:
+        
+       
+        val: gets a node (returns object)
+        str: gets a node in string format, regardless of type.
+	bool: gets a boolean node (type sensitive)
+        i: gets an integer node (type sensitive)
+        d: gets a double node (type sensitive)
+        l: gets a long node (type sensitive)
+        getKey: gets the key for current node
+        
+        
+        
+        Updating Nodes: (That already exist)
+        
+        set: sets a value
+        jset: set a value from a JSON string
+        
+        
+        Updating/Adding Nodes: (That may or may not exist)
+        
+        put: sets a value
+        jput: set a value from a JSON string
+        
+        
+        Array Specific Setting Methods:
+        
+        add: adds a value
+        jadd: adds a value from a JSON string
+        
+        
+        
+        Creating Nodes:
+        
+        obj: creates an empty object node
+        arr: creates an empty array node
+        
+        
+        
+        Iteration:
+        
+        each: gets each element of an array or each member of an object
+        
+        
+        
+        Removing:
+        
+        remove(string): Removing an object member
+        remove(int): Removing an array member
+        
+        
+        
+        Clearing
+        
+        clear() clears a node
+        
+        
+        
+        Testing Existence
+        
+        exists: true or false depending on the nodes existence.
+        
+        
+        Type determination:
+        
+        type : gets the type of the current node as a string.
+        	Possible types are:
+        	object
+        	array
+        	string
+        	number
+        	boolean
+        	null
+        	
+        isLeaf: returns true if the node is a leaf (endpoint)
+        isObject: returns true if the node is an object
+        isArray: returns true if the node is an array
+        
+        
+        
+	Inherited Methods: JsonQueryObject extends HashMap, and JsonQueryArray extends ArrayList.
 
 ## Syntax
 
