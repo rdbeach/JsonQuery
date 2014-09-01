@@ -155,11 +155,11 @@ public class JSQLParser {
 		return precedence;
 	}
 	
-	private JSQLTokenMap<Integer,String> splitOnQuotes(String queryString){
+	private List<JSQLToken<Integer,String>> splitOnQuotes(String queryString){
 		Pattern pattern = Pattern.compile(QUOTATIONS);
 	    Matcher matcher = pattern.matcher(queryString);
 	     
-	    JSQLTokenMap<Integer,String> tokenMap = new JSQLTokenMap<Integer,String>();
+	    List <JSQLToken<Integer,String>> tokenList = new ArrayList<JSQLToken<Integer,String>>();
 	    
 	    Stack<String> stack = new Stack<String>();
 	    int lastIndex=0;
@@ -185,36 +185,31 @@ public class JSQLParser {
 	    		if(stack.empty()){
 		    		out("Push:`");
     				stack.push(KEY_QUOTE);
-    				tokenMap.tokens.add(queryString.substring(lastIndex,matcher.start()));
-			    	tokenMap.type.add(STRING);
+    				tokenList.add(new JSQLToken<Integer,String>(STRING,queryString.substring(lastIndex,matcher.start())));
 			    	lastIndex=matcher.end();
 		    	}else if(lastToken.equals(KEY_QUOTE)){
 	    			out("Pop:`");
 	    			stack.pop();
-			    	tokenMap.tokens.add(queryString.substring(lastIndex,matcher.start()));
-			    	tokenMap.type.add(PATH);
+	    			tokenList.add(new JSQLToken<Integer,String>(PATH,queryString.substring(lastIndex,matcher.start())));
 			    	lastIndex=matcher.end();
 			    }
 		    }else if(groupStr.equals(STRING_QUOTE)){
 		    	if(stack.empty()){
 		    		out("Push:'");
     				stack.push(STRING_QUOTE);
-    				tokenMap.tokens.add(queryString.substring(lastIndex,matcher.start()));
-			    	tokenMap.type.add(STRING);
+    				tokenList.add(new JSQLToken<Integer,String>(STRING,queryString.substring(lastIndex,matcher.start())));
 			    	lastIndex=matcher.end();
 		    	}else if(lastToken.equals(STRING_QUOTE)){
 		    		out("Pop:'");
 	    			stack.pop();
-			    	tokenMap.tokens.add(queryString.substring(lastIndex,matcher.start()));
-			    	tokenMap.type.add(STRING);
+	    			tokenList.add(new JSQLToken<Integer,String>(STRING,queryString.substring(lastIndex,matcher.start())));
 			    	lastIndex=matcher.end();
 		    	}
 		    }else if(groupStr.equals(STRING_DOUBLE_QUOTE)){
 		    	if(stack.empty()){
 		    		out("Push:''");
     				stack.push(STRING_DOUBLE_QUOTE);
-    				tokenMap.tokens.add(queryString.substring(lastIndex,matcher.start()));
-			    	tokenMap.type.add(STRING);
+    				tokenList.add(new JSQLToken<Integer,String>(STRING,queryString.substring(lastIndex,matcher.start())));
 			    	lastIndex=matcher.end();
 		    	}else if(lastToken.equals(STRING_QUOTE)||lastToken.equals(STRING_DOUBLE_QUOTE)){
 		    		out("Pop:''");
@@ -223,16 +218,14 @@ public class JSQLParser {
 		    		if(lastToken.equals(STRING_QUOTE)){
 		    			offset=1;
 		    		}
-		    		tokenMap.tokens.add(queryString.substring(lastIndex,matcher.start()+offset));
-			    	tokenMap.type.add(STRING);
+		    		tokenList.add(new JSQLToken<Integer,String>(STRING,queryString.substring(lastIndex,matcher.start()+offset)));
 			    	lastIndex=matcher.end();
 		    	}
 	    	}else if(groupStr.equals(KEY_DOUBLE_QUOTE)){
 	    		if(stack.empty()){
     				stack.push(KEY_DOUBLE_QUOTE);
     				out("Push:``");
-    				tokenMap.tokens.add(queryString.substring(lastIndex,matcher.start()));
-			    	tokenMap.type.add(STRING);
+    				tokenList.add(new JSQLToken<Integer,String>(STRING,queryString.substring(lastIndex,matcher.start())));
 			    	lastIndex=matcher.end();
 	    		}else if(lastToken.equals(KEY_QUOTE)||lastToken.equals(KEY_DOUBLE_QUOTE)){
 	    			out("Pop:``");
@@ -241,8 +234,7 @@ public class JSQLParser {
 		    		if(lastToken.equals(KEY_QUOTE)){
 		    			offset=1;
 		    		}
-		    		tokenMap.tokens.add(queryString.substring(lastIndex,matcher.start()+offset));
-			    	tokenMap.type.add(PATH);
+		    		tokenList.add(new JSQLToken<Integer,String>(PATH,queryString.substring(lastIndex,matcher.start()+offset)));
 			    	lastIndex=matcher.end();
 	    		}	
 	    	}
@@ -258,12 +250,10 @@ public class JSQLParser {
 	    }else{
 	    	clause=EMPTY;
 	    }
-	    tokenMap.tokens.add(clause);
-	    tokenMap.type.add(0);
+	    tokenList.add(new JSQLToken<Integer,String>(0,clause));
+    	
 	 
-	    listIt(tokenMap.tokens,"Parse out ` ' delimeters: \n----------------------------- ", "token: ");
-	    listIt(tokenMap.type,"Parse out ` ' delimeters: \n----------------------------", "Token type: ");
-		return tokenMap;
+	    return tokenList;
 	}
 	
 	private List<String> splitOnBrackets(String queryString){
@@ -360,8 +350,8 @@ public class JSQLParser {
 	    return tokenList;
 	}
 	
-	private String quotes(int i , JSQLTokenMap<Integer,String> queryStringMap){
-		if(queryStringMap.type.get(i)==PATH){
+	private String quotes(JSQLToken<Integer,String> token){
+		if(token.type==PATH){
 			return KEY_DOUBLE_QUOTE;
 		}else{
 			return STRING_DOUBLE_QUOTE;
@@ -373,49 +363,42 @@ public class JSQLParser {
 		
 		// Splice out parts in back ticks and single quotes
 		
-		JSQLTokenMap<Integer,String> queryStringMap = splitOnQuotes(queryString);
+		List<JSQLToken<Integer,String>> tokenList = splitOnQuotes(queryString);
 		
-		List<String> tokenList = queryStringMap.tokens;
 		
 		if(tokenList==null)return null;
 		
 		// Get the command structure based on the first keyword
 		
-		Object[][] keywords = getJsqlCommandStructure(tokenList.get(0).trim().toLowerCase());
+		Object[][] keywords = getJsqlCommandStructure(tokenList.get(0).value.trim().toLowerCase());
 		
 		// querystring must start with an acceptable verb
 		
 		if(keywords==null){
-			err("Jsql syntax error. Invalid verb: " + tokenList.get(0).trim());
+			err("Jsql syntax error. Invalid verb: " + tokenList.get(0).value.trim());
 			return null;
 		}
 		
 		// reassemble
 		
-		String[] tokens=tokenList.toArray(new String[tokenList.size()]);
-		
 		StringBuilder str = new StringBuilder(EMPTY);
-		for (int i = 0; i < tokens.length; i+=2) {
-		    str.append(tokens[i]);
-		    if(i+2<tokens.length)
+		for (int i = 0; i < tokenList.size(); i+=2) {
+		    str.append(tokenList.get(i).value);
+		    if(i+2<tokenList.size())
 		    str.append(KEY_PLACEHOLDER);
 			//out(i+": "+tokenList.get(i));
 		}
 		
 		// Splice out bracketed parts
 		
-		
-		
-		List<String>tokenList2 = splitOnBrackets(str.toString());
+		List<String>bracketSplitTokens = splitOnBrackets(str.toString());
 		
 		// reassemble
-		
-		tokens=tokenList2.toArray(new String[tokenList2.size()]);
 
 		str = new StringBuilder(EMPTY);
-		for (int i = 0; i < tokens.length; i+=2) {
-		    str.append(tokens[i]);
-		    if(i+2<tokens.length)
+		for (int i = 0; i < bracketSplitTokens.size(); i+=2) {
+		    str.append(bracketSplitTokens.get(i));
+		    if(i+2<bracketSplitTokens.size())
 		    str.append(BRACKETS_PLACEHOLDER);
 			//out(i+": "+tokenList.get(i));
 		}
@@ -488,12 +471,12 @@ public class JSQLParser {
      	    	index = matcher.end();
      	    	StringBuilder replacement = new StringBuilder();
      	    	replacement.append(SELECTOR_LEFT_BRACKET);
-     	    	replacement.append(tokenList2.get(i).
+     	    	replacement.append(bracketSplitTokens.get(i).
      	    			replace(DOUBLE_BACKSLASH, QUADRUPLE_BACKSLASH).
  						replace(DOLLARSIGN, DOLLARSIGN_BACKSLASH));
      	    	replacement.append(SELECTOR_RIGHT_BRACKET);
      	    	newClause.append(matcher.replaceFirst(replacement.toString()).
-     	    			substring(0,index+tokenList2.get(i).length()));
+     	    			substring(0,index+bracketSplitTokens.get(i).length()));
      	    	clause = clause.substring(index);
      	    	matcher = pattern.matcher(clause);
      	    	i+=2;
@@ -519,13 +502,13 @@ public class JSQLParser {
     	    while (matcher.find()) {
     	    	index = matcher.end();
     	    	StringBuilder replacement = new StringBuilder();
-    	    	replacement.append(quotes(i,queryStringMap));
-    	    	replacement.append(tokenList.get(i).
+    	    	replacement.append(quotes(tokenList.get(i)));
+    	    	replacement.append(tokenList.get(i).value.
     	    			replace(DOUBLE_BACKSLASH, QUADRUPLE_BACKSLASH).
 						replace(DOLLARSIGN, DOLLARSIGN_BACKSLASH));
-    	    	replacement.append(quotes(i,queryStringMap));
+    	    	replacement.append(quotes(tokenList.get(i)));
     	    	newClause.append(matcher.replaceFirst(replacement.toString()).
-    	    			substring(0,index+tokenList.get(i).length()+2));
+    	    			substring(0,index+tokenList.get(i).value.length()+2));
     	    	clause = clause.substring(index);
     	    	matcher = pattern.matcher(clause);
     	    	i+=2;
@@ -542,12 +525,12 @@ public class JSQLParser {
 		return tokenMap;
 	}
 	
-	public JSQLTokenMap<Integer,Object> parseExpression(String expression, JSQLExpression evaluator){
+	public List<JSQLToken<Integer,Object>> parseExpression(String expression, JSQLExpression evaluator){
 		
 		Pattern pattern = Pattern.compile(EXPRESSIONQUOTES);
 	    Matcher matcher = pattern.matcher(expression);
 	    
-	    JSQLTokenMap<Integer,String> tokenMap = new JSQLTokenMap<Integer,String>();
+	    List<JSQLToken<Integer,String>> tokenList = new ArrayList<JSQLToken<Integer,String>>();
 	    
 	    Stack<String> stack = new Stack<String>();
 	    int lastIndex=0;
@@ -573,30 +556,26 @@ public class JSQLParser {
 	    		if(lastToken.equals(SELECTOR_LEFT_BRACKET)){
 	    			out("Pop:[");
 	    			stack.pop();
-			    	tokenMap.tokens.add(expression.substring(lastIndex,matcher.start()));
-			    	tokenMap.type.add(PATH);
+	    			tokenList.add(new JSQLToken<Integer,String>(PATH,expression.substring(lastIndex,matcher.start())));
 			    	lastIndex=matcher.end();
 			    }
 		    }else if(groupStr.equals(SELECTOR_LEFT_BRACKET)){
 		    	if(stack.empty()){
 		    		out("Push:[");
     				stack.push(SELECTOR_LEFT_BRACKET);
-    				tokenMap.tokens.add(expression.substring(lastIndex,matcher.start()));
-			    	tokenMap.type.add(STRING);
-    				lastIndex=matcher.end();
+    				tokenList.add(new JSQLToken<Integer,String>(STRING,expression.substring(lastIndex,matcher.start())));
+			    	lastIndex=matcher.end();
 		    	}
 		    }else if(groupStr.equals(STRING_DOUBLE_QUOTE)){
 		    	if(stack.empty()){
 		    		out("Push:''");
     				stack.push(STRING_DOUBLE_QUOTE);
-    				tokenMap.tokens.add(expression.substring(lastIndex,matcher.start()));
-			    	tokenMap.type.add(STRING);
-    				lastIndex=matcher.end();
+    				tokenList.add(new JSQLToken<Integer,String>(STRING,expression.substring(lastIndex,matcher.start())));
+			    	lastIndex=matcher.end();
 		    	}else if(lastToken.equals(STRING_DOUBLE_QUOTE)){
 		    		out("Pop:''");
 		    		stack.pop();
-		    		tokenMap.tokens.add(expression.substring(lastIndex,matcher.start()));
-			    	tokenMap.type.add(STRING);
+		    		tokenList.add(new JSQLToken<Integer,String>(STRING,expression.substring(lastIndex,matcher.start())));
 			    	lastIndex=matcher.end();
 		    	}
 	    	}else if(groupStr.equals(KEY_DOUBLE_QUOTE)){
@@ -621,14 +600,12 @@ public class JSQLParser {
 	    }else{
 	    	clause=EMPTY;
 	    }
-	    tokenMap.tokens.add(clause);
-	    tokenMap.type.add(0);
-		
-		List<String> tokenList = tokenMap.tokens;
+	    tokenList.add(new JSQLToken<Integer,String>(0,clause));
+    	
 		
 		// Get the command strucure based on the first keyword
 		
-		Object[][] keywords = getJsqlCommandStructure(tokenList.get(0).trim().toLowerCase());
+		Object[][] keywords = getJsqlCommandStructure(tokenList.get(0).value.trim().toLowerCase());
 		
 		// TODO: nested select
 		if(keywords!=null){
@@ -636,25 +613,24 @@ public class JSQLParser {
 			//return null;
 		}
 		
-		 JSQLTokenMap<Integer,Object> variablesMap = new JSQLTokenMap<Integer,Object>();
+		 List<JSQLToken<Integer,Object>> variablesList = new ArrayList<JSQLToken<Integer,Object>>();
 		
 		// reassemble simplified expression
 		
-		String[] tokens=tokenList.toArray(new String[tokenList.size()]);
 		
 		StringBuilder simplified_expression = new StringBuilder(EMPTY);
 		int count=0;
-		for (int i = 0; i < tokens.length; i++) {
+		for (int i = 0; i < tokenList.size(); i++) {
 			if(i%2==0){
 				// Other Parts
-			    simplified_expression.append(tokens[i]);
-			    if(i+1<tokens.length){
+			    simplified_expression.append(tokenList.get(i).value);
+			    if(i+1<tokenList.size()){
 			    	simplified_expression.append(evaluator.dummyVar(count));
-					count++;
+					
 			    }
 			}else{ // Paths and String variables
-				variablesMap.tokens.add(tokens[i]);
-				variablesMap.type.add(tokenMap.type.get(i));
+				variablesList.add(new JSQLToken<Integer,Object>(tokenList.get(i).type,count,(Object)tokenList.get(i).value));
+				count++;
 			}
 		}
 		
@@ -662,9 +638,9 @@ public class JSQLParser {
 		
 		// Pass it to the evaluator to prepare for evaluation
 		
-		evaluator.tokenize(simplified_expression.toString(),variablesMap,count);
+		evaluator.tokenize(simplified_expression.toString(),variablesList,count);
 		
-		return variablesMap;
+		return variablesList;
 
 	}
 	

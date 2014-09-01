@@ -78,7 +78,7 @@ public class JSQLExpression {
 	/**
 	 * The RPN (Reverse Polish Notation) of the expression.
 	 */
-	private List<String> rpn = null;
+	public List<String> rpn = null;
 	/**
 	 * All defined operators with name and implementation.
 	 */
@@ -262,7 +262,7 @@ public class JSQLExpression {
 			throw new ExpressionException("remove() not supported");
 		}
 		
-		private List<String> tokenizeSimplifiedExpression(JSQLTokenMap<Integer,Object> variablesMap,int count){
+		private List<String> tokenizeSimplifiedExpression(List<JSQLToken<Integer,Object>> variablesList,int count){
 			
 			Pattern pattern = Pattern.compile(KEYWORD_REGEX, Pattern.CASE_INSENSITIVE);
 		    Matcher matcher = pattern.matcher(input);
@@ -301,8 +301,8 @@ public class JSQLExpression {
 		    	if(!clause.trim().equals("")){
 		    		if(!clause.trim().startsWith("ARG")){
 		    			variables.put(dummyVar(count),null);
-		    			tokenList.add(dummyVar(count++));
-		    			putByType(variablesMap,clause.trim());
+		    			tokenList.add(dummyVar(count));
+		    			putByType(variablesList,count++,clause.trim());
 		    		}else{
 		    			variables.put(clause.trim(),null);
 		    			tokenList.add(clause.trim());
@@ -320,8 +320,8 @@ public class JSQLExpression {
 		    	clause = input.substring(beginClause,input.length());
 		    	if(!clause.trim().startsWith("ARG")){
 		    		variables.put(dummyVar(count),null);
-	    			tokenList.add(dummyVar(count++));
-	    			putByType(variablesMap,clause.trim());
+	    			tokenList.add(dummyVar(count));
+	    			putByType(variablesList,count++,clause.trim());
 	    		}else{
 	    			variables.put(clause.trim(),null);
 	    			tokenList.add(clause.trim());
@@ -794,10 +794,10 @@ public class JSQLExpression {
 	 *
 	 * @return The result of the expression.
 	 */
-	public void tokenize(String expression,JSQLTokenMap<Integer,Object> variablesMap,int count) {
+	public void tokenize(String expression,List<JSQLToken<Integer,Object>> variablesList,int count) {
 		clear();
 		Tokenizer tokenizer = new Tokenizer(expression);
-		tokens = tokenizer.tokenizeSimplifiedExpression(variablesMap,count);
+		tokens = tokenizer.tokenizeSimplifiedExpression(variablesList,count);
 		getRPN();
 	}
 	
@@ -923,17 +923,15 @@ public class JSQLExpression {
 		}
 	}
 	
-	private void putByType(JSQLTokenMap<Integer,Object> variablesMap, String variable){
+	private void putByType(List<JSQLToken<Integer,Object>> variablesList,int count,String variable){
 		if(isNumber(variable)){
-			variablesMap.tokens.add(new BigDecimal(variable));
-			variablesMap.type.add(NUMERIC); // Numeric
+			variablesList.add(new JSQLToken<Integer,Object>(NUMERIC,count,new BigDecimal(variable)));
 		}else if(variable.equalsIgnoreCase("true")||variable.equalsIgnoreCase("false")){
-			variablesMap.tokens.add(new Boolean(variable));
-			variablesMap.type.add(NUMERIC); // Numeric
+			variablesList.add(new JSQLToken<Integer,Object>(NUMERIC,count,new Boolean(variable)));
 		}else{
-			variablesMap.tokens.add(variable);
-			variablesMap.type.add(PATH); // Path
+			variablesList.add(new JSQLToken<Integer,Object>(PATH,count,variable));
 		}
+		System.out.println(count);
 	}
 	
 	public String dummyVar(int count){

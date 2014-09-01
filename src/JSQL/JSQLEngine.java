@@ -47,7 +47,9 @@ public class JSQLEngine {
 
 	JSQLParser jsqlParser = new JSQLParser();
 
-	JSQLResultSetManager resultManager = new JSQLResultSetManager();
+	JSQLResultSetManager resultManager;
+	
+	private Optimizer optimizer;
 
 	private JSQLExpression evaluator;
 
@@ -55,6 +57,8 @@ public class JSQLEngine {
 
 	private JSQLEngine(){
 		this.cntx = new JQLContext();
+		this.resultManager = new JSQLResultSetManager();
+		this.optimizer = new Optimizer();
 	}
 
 	public static final JSQLEngine getJQL(){
@@ -66,6 +70,29 @@ public class JSQLEngine {
 		public int index=0;
 		public boolean include=true;
 		public boolean check=true;
+	}
+	
+	private class Optimizer{
+		public void optimizeWhereClause(
+				List<JSQLToken<Integer,Object>> variableList,
+				Map<Integer,ArrayList<JSQLSelector>> selectorsMap){
+			
+			out2("Optimizer:");
+			
+			for (String token : evaluator.getRPN()) {
+				out2(" | " + token);
+				out2("");
+			}
+			evaluator.rpn.remove(0);
+			evaluator.rpn.remove(0);
+			evaluator.rpn.remove(0);
+			evaluator.rpn.remove(3);
+			variableList.remove(1);
+			variableList.remove(1);
+			selectorsMap.remove(1);
+			resultManager.initializeFromSetCounts();
+			filterResult(variableList,selectorsMap);
+		}
 	}
 
 	public JSQLResultSet<JSQLNode> execute(JSQLNode node,String queryString){
@@ -143,19 +170,17 @@ public class JSQLEngine {
 		if(evaluator==null)
 			evaluator = new JSQLExpression();
 
-		JSQLTokenMap<Integer,Object> variableMap = jsqlParser.parseExpression(whereClause,evaluator);
+		List<JSQLToken<Integer,Object>> variableList = jsqlParser.parseExpression(whereClause,evaluator);
 		Map<Integer,ArrayList<JSQLSelector>> selectorsMap = new HashMap<Integer,ArrayList<JSQLSelector>>();
+
+		if(variableList==null)return;
 		
-		if(variableMap==null)return;
-		
-		int i=0;
-		for(Object variable:variableMap.tokens){
-			out2("var: " + variable + " type: " + variableMap.type.get(i));
-			if(variableMap.type.get(i)==SELECTOR){
-				ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection((String)variable,resultManager.fromClauseResultSetIdentifiers);
-				selectorsMap.put(i,selectors);
+		for(JSQLToken<Integer,Object> variable:variableList){
+			out2("var: " + variable.value + " type: " + variable.type + " index: " + variable.index);
+			if(variable.type==SELECTOR){
+				ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection((String)variable.value,resultManager.fromClauseResultSetIdentifiers);
+				selectorsMap.put(variable.index,selectors);
 			}
-			i++;
 		}
 		
 		// optimize expression
@@ -167,34 +192,23 @@ public class JSQLEngine {
 		// chose the operand with the least number of datasets and evaluate, in this case
 		// a
 		
-		
-		optimizeExpression();
-		
-		filterResult(variableMap,selectorsMap);
+		optimizer.optimizeWhereClause(variableList,selectorsMap);
 	}
 	
 	private void filterResult(
-			JSQLTokenMap<Integer,Object> variableMap,
+			List<JSQLToken<Integer,Object>> variableList,
 			Map<Integer,ArrayList<JSQLSelector>> selectorsMap
 			){
 		
-		Map<Integer,Object> valsList = new HashMap<Integer,Object>();
-		List<JSQLResultSet<JSQLNode>> subsetList = new ArrayList<JSQLResultSet<JSQLNode>>();
+		Map<Integer,Object> valsMap = new HashMap<Integer,Object>();
+		Map<Integer,JSQLResultSet<JSQLNode>> subsetMap = new HashMap<Integer,JSQLResultSet<JSQLNode>>();
 		
-		int i=0;
-		for(Object variable:variableMap.tokens){
-			if(variable!=null){
-				if(variableMap.type.get(i)==SELECTOR){
-					valsList.put(i,0);
-				}else{
-					valsList.put(i,variable);
-				}
+		for(JSQLToken<Integer,Object> variable:variableList){
+			if(variable.type!=SELECTOR){
+				valsMap.put(variable.index,variable.value);
 			}
-			subsetList.add(null);
-			i++;
 		}
 		
-		resultManager.initializeFromSetCounts();
 		ArrayList<JSQLNode> resultVector;
 		while ((resultVector = resultManager.getResultVector())!=null) {
 			boolean pass = false;
@@ -204,15 +218,14 @@ public class JSQLEngine {
 				JSQLResultSet<JSQLNode> resultSet = resultManager.getResultSet(SUBSELECT );
 				if(!resultSet.isEmpty()){
 					pass=true;
-					valsList.put(entry.getKey(),0);
-					subsetList.set(entry.getKey(),resultSet);
+					subsetMap.put(entry.getKey(),resultSet);
 				}else{
 					pass=false;
 					break;
 				}
 			}
 			if(pass){
-				pass=iterateOverSubsets(variableMap,valsList,subsetList,0,pass,null);
+				pass=iterateOverSubsets(variableList,valsMap,subsetMap,0,pass,null);
 			}
 			if(pass){
 				resultManager.filteredResultSet.add(resultVector);
@@ -227,7 +240,7 @@ public class JSQLEngine {
 		if(expressions==null){
 			return new JSQLResultSet<JSQLNode>();
 		}
-		List<JSQLTokenMap<Integer,Object>> variableMaps = new ArrayList<JSQLTokenMap<Integer,Object>>();
+		List<List<JSQLToken<Integer,Object>>> variableLists = new ArrayList<List<JSQLToken<Integer,Object>>>();
 		List<Boolean> isExpressionList = new ArrayList<Boolean>();
 		List<List<String>> tokensList = new ArrayList<List<String>>();
 
@@ -236,16 +249,13 @@ public class JSQLEngine {
 			if(evaluator==null)
 				evaluator = new JSQLExpression();
 
-			JSQLTokenMap<Integer,Object> variableMap = jsqlParser.parseExpression(expr,evaluator);
+			List<JSQLToken<Integer,Object>> variableList = jsqlParser.parseExpression(expr,evaluator);
 
-			if(variableMap==null)new JSQLResultSet<JSQLNode>();
+			if(variableList==null)new JSQLResultSet<JSQLNode>();
 
 			List<String> tokens = evaluator.getContext();
 
-			listIt(variableMap.tokens,"SelectClause: List of variable values","value: ");
-			listIt(variableMap.type,"SelectClause: List of variable types","type: ");
-
-			variableMaps.add(variableMap);
+			variableLists.add(variableList);
 			tokensList.add(tokens);
 
 			boolean isExpression = false;
@@ -272,40 +282,36 @@ public class JSQLEngine {
 					ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection(expr,resultManager.fromClauseResultSetIdentifiers);
 					executeSelection(resultVector, SELECT, selectors);
 				}else{
-					JSQLTokenMap<Integer,Object> variableMap = variableMaps.get(i);
+					List<JSQLToken<Integer,Object>> variableList = variableLists.get(i);
 					evaluator.setContext(tokensList.get(i));
 					
-					optimizeExpression();
-					
 					boolean pass = false;
-					List<JSQLResultSet<JSQLNode>> subsetList = new ArrayList<JSQLResultSet<JSQLNode>>();
+					Map<Integer,JSQLResultSet<JSQLNode>> subsetMap = new HashMap<Integer,JSQLResultSet<JSQLNode>>();
 					Map<Integer,Object> valsList = new HashMap<Integer,Object>();
 					int j=0;
-					for(Object variable:variableMap.tokens){
-						if(variableMap.type.get(j)==SELECTOR){
+					for(JSQLToken<Integer,Object> variable:variableList){
+						if(variable.type==SELECTOR){
 							//JSQLResultSet<JSQLNode> resultSet = new JSQLResultSet<JSQLNode>();
 							resultManager.removeResultSet(SUBSELECT );
-							ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection((String)variable,resultManager.fromClauseResultSetIdentifiers);
+							ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection((String)variable.value,resultManager.fromClauseResultSetIdentifiers);
 							executeSelection(resultVector, SUBSELECT, selectors);
 							JSQLResultSet<JSQLNode> resultSet = resultManager.getResultSet(SUBSELECT );
 							out("Exec Selectlause: Got resultset");
 							if(!resultSet.isEmpty()){
 								pass=true;
-								valsList.put(j,0);
-								subsetList.add(resultSet);
+								subsetMap.put(variable.index,resultSet);
 							}else{
 								out("Resultset is empty!!");
 								pass=false;
 								break;
 							}
 						}else{
-							valsList.put(j,variable);
-							subsetList.add(null);
+							valsList.put(variable.index,variable.value);
 						}
 						j++;
 					}
 					if(pass){
-						iterateOverSubsets(variableMap,valsList,subsetList,0,pass,expr);
+						iterateOverSubsets(variableList,valsList,subsetMap,0,pass,expr);
 					}
 				}
 				i++;
@@ -392,17 +398,19 @@ public class JSQLEngine {
 		}
 	}
 	
-	private boolean iterateOverSubsets(JSQLTokenMap<Integer,Object> variableMap,
-			Map<Integer,Object> valsList,
-			List<JSQLResultSet<JSQLNode>> subsetList,
+	private boolean iterateOverSubsets(List<JSQLToken<Integer,Object>> variableList,
+			Map<Integer,Object> valsMap,
+			Map<Integer,JSQLResultSet<JSQLNode>> subsetMap,
 			int i,
 			boolean pass,
 			String expr){
 		if(!pass)return false;
+		out(variableList.get(i).type==SELECTOR);
 		out("iterateResultSets: variable iteration "+i);
-		if(variableMap.type.get(i)==SELECTOR){ // Path
-			out("variable name: " + variableMap.tokens.get(i));
-			JSQLResultSet<JSQLNode> resultSet=subsetList.get(i);
+		if(variableList.get(i).type==SELECTOR){ // Path
+			int index = variableList.get(i).index;
+			out("variable name: " + variableList.get(i).value);
+			JSQLResultSet<JSQLNode> resultSet=subsetMap.get(index);
 			out("Pulling resultset");
 			if(!resultSet.isEmpty()){
 				out("Resultset is not empty. Iterating...");
@@ -411,15 +419,16 @@ public class JSQLEngine {
 					JSQLNode subnode = resultSet.get(j);
 					if(subnode.isLeaf()){
 						out("Adding node to valslist: "+subnode.getElement());
-						valsList.put(i,subnode.getElement());
+						valsMap.put(index,subnode.getElement());
 					}else{
 						out("Subnode is not a leaf");
 						pass=false;
 						break;
 					}
-					out("evaluates to : "+evaluator.eval(valsList));
-					if(i!=variableMap.tokens.size()-1){
-						pass=iterateOverSubsets(variableMap,valsList,subsetList,i+1,pass,expr);
+					out("hi");
+					//out2("evaluates to : "+evaluator.eval(valsMap));
+					if(i!=variableList.size()-1){
+						pass=iterateOverSubsets(variableList,valsMap,subsetMap,i+1,pass,expr);
 					}else{
 						if(expr!=null){
 							JSQLResultSet<JSQLNode> selectResultSet = resultManager.getResultSet(SELECT);
@@ -427,10 +436,10 @@ public class JSQLEngine {
 								selectResultSet.identifiers.add(jsqlParser.formatForOutput(expr));
 							}
 							cntx.index = selectResultSet.identifiers.indexOf(jsqlParser.formatForOutput(expr));
-							selectResultSet.add(rootNode.createNewNode(evaluator.eval(valsList),jsqlParser.formatForOutput(expr)));
+							selectResultSet.add(rootNode.createNewNode(evaluator.eval(valsMap),jsqlParser.formatForOutput(expr)));
 							selectResultSet.index.add(cntx.index); 
 						}else{
-							if(evaluator.eval(valsList)!=BigDecimal.ONE){
+							if(evaluator.eval(valsMap)!=BigDecimal.ONE){
 								out("eval produced false");
 								pass=false;
 								break;
@@ -443,8 +452,9 @@ public class JSQLEngine {
 				pass=false;
 			}
 		}else{
-			if(i!=variableMap.tokens.size()-1){
-				pass=iterateOverSubsets(variableMap,valsList,subsetList,i+1,pass,expr);
+			out(1111);
+			if(i!=variableList.size()-1){
+				pass=iterateOverSubsets(variableList,valsMap,subsetMap,i+1,pass,expr);
 			}else{
 				if(expr!=null){
 					JSQLResultSet<JSQLNode> selectResultSet = resultManager.getResultSet(SELECT);
@@ -452,10 +462,10 @@ public class JSQLEngine {
 						selectResultSet.identifiers.add(jsqlParser.formatForOutput(expr));
 					}
 					cntx.index = selectResultSet.identifiers.indexOf(jsqlParser.formatForOutput(expr));
-					selectResultSet.add(rootNode.createNewNode(evaluator.eval(valsList),jsqlParser.formatForOutput(expr)));
+					selectResultSet.add(rootNode.createNewNode(evaluator.eval(valsMap),jsqlParser.formatForOutput(expr)));
 					selectResultSet.index.add(cntx.index); 
 				}else{
-					if(evaluator.eval(valsList)!=BigDecimal.ONE){
+					if(evaluator.eval(valsMap)!=BigDecimal.ONE){
 						out("eval produced false");
 						pass=false;
 					}
@@ -464,15 +474,6 @@ public class JSQLEngine {
 		}
 		return pass;
 	}
-	
-	public void optimizeExpression(){
-		out2("Optimizer:");
-		for (String token : evaluator.getRPN()) {
-			out2(" | " + token);
-			out2("");
-		}
-	}
-	
 
 	private void executeSelection(ArrayList<JSQLNode> resultVector, 
 			String identifier,
