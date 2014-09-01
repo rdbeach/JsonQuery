@@ -407,15 +407,15 @@ The variable msg will contain the JSON string above.
 	// .....with obj and arr functions
 	
 	JsonQuery json = $.arr();
-        json.
-        	add("a").
-        	add($.obj().
-        		put("b", "c").
-        		put("d",$.arr().
-        			add("e").
-        			add("f")
-    			)
-        	).add("g");
+	json.
+		add("a").
+		add($.obj().
+			put("b", "c").
+			put("d",$.arr().
+				add("e").
+				add("f")
+	    		)
+		).add("g");
 	        
 	out(json.toJson());
 	
