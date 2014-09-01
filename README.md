@@ -403,7 +403,28 @@ The variable msg will contain the JSON string above.
 #### Chaining, chaining, chaining.:
 
 	// Building JSON with single nodes:
-            
+	
+	// .....with obj and arr functions
+	
+	JsonQuery json = $.arr();
+	        json.
+	        	add("a").
+	        	add($.obj().
+	        		put("b", "c").
+	        		put("d",$.arr().
+	        			add("e").
+	        			add("f")
+    				)
+	        	).add("g");
+	        
+	out(json.toJson());
+	
+	// ["a",{"b":"c","d":["e","f"]},"g"]
+	
+	
+	
+        // .....with the node function
+        
 	$ = JsonQuery.fromJson("{}");
 	
 	$.node("notification").
@@ -422,7 +443,8 @@ The variable msg will contain the JSON string above.
 	
 	// {"access_token":"access_token","notification":{"sound":"sounds/ararmsound.wav","message":"test","target":{"apps":[{"id":"app_id","platforms":["ios"]}]}}}
 		
-
+	// .....with jput
+	
 	$ = JsonQuery.fromJson("{}");
 
 	$.put("name", "bob").
