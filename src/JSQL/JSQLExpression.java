@@ -53,9 +53,16 @@ public class JSQLExpression {
 	
 	
 	private static final String KEYWORD_REGEX = "==|<>|!=|<=|>=|&&|\\|\\||=|>|<|\\+|-|\\*|\\^|%|,|/|\\)|\\(|(?<!\\S)and|or(?!\\S)|"
-			+ "(\\b)SQRT(\\b)|(\\b)IF(\\b)|(\\b)RANDOM(\\b)|(\\b)MIN(\\b)|(\\b)MAX(\\b)|(\\b)ABS(\\b)|(\\b)ROUND(\\b)|(\\b)FLOOR(\\b)|"
+			+ "(\\b)NOT(\\b)|(\\b)SQRT(\\b)|(\\b)IF(\\b)|(\\b)RANDOM(\\b)|(\\b)MIN(\\b)|(\\b)MAX(\\b)|(\\b)ABS(\\b)|(\\b)ROUND(\\b)|(\\b)FLOOR(\\b)|"
 			+ "(\\b)CEILING(\\b)|(\\b)LOG(\\b)|(\\b)SQRT(\\b)|(\\b)SIN(\\b)|(\\b)COS(\\b)|(\\b)TAN(\\b)|(\\b)SINH(\\b)|(\\b)COSH(\\b)|"
 			+ "(\\b)TANH(\\b)|(\\b)RAD(\\b)|(\\b)DEG(\\b)";
+	
+	
+	public static final String ARITY1 = "\\^|(\\b)NOT(\\b)|(\\b)SQRT(\\b)|(\\b)IF(\\b)|(\\b)RANDOM(\\b)|(\\b)ABS(\\b)|(\\b)ROUND(\\b)|(\\b)FLOOR(\\b)|"
+			+ "(\\b)CEILING(\\b)|(\\b)LOG(\\b)|(\\b)SQRT(\\b)|(\\b)SIN(\\b)|(\\b)COS(\\b)|(\\b)TAN(\\b)|(\\b)SINH(\\b)|(\\b)COSH(\\b)|"
+			+ "(\\b)TANH(\\b)|(\\b)RAD(\\b)|(\\b)DEG(\\b)";
+		
+	public static final String ARITY2 = "==|<>|!=|<=|>=|&&|\\|\\||=|>|<|\\+|-|%|\\*|/|(?<!\\S)and|or(?!\\S)|(\\b)MIN(\\b)|(\\b)MAX(\\b)";
 	
 	/**
 	 * Definition of PI as a constant, can be used in expressions as variable.
@@ -262,7 +269,7 @@ public class JSQLExpression {
 			throw new ExpressionException("remove() not supported");
 		}
 		
-		private List<String> tokenizeSimplifiedExpression(List<JSQLToken<Integer,Object>> variablesList,int count){
+		private List<String> tokenizeSimplifiedExpression(List<JSQLToken<Integer,Object>> operandList,int count){
 			
 			Pattern pattern = Pattern.compile(KEYWORD_REGEX, Pattern.CASE_INSENSITIVE);
 		    Matcher matcher = pattern.matcher(input);
@@ -302,7 +309,7 @@ public class JSQLExpression {
 		    		if(!clause.trim().startsWith("ARG")){
 		    			variables.put(dummyVar(count),null);
 		    			tokenList.add(dummyVar(count));
-		    			putByType(variablesList,count++,clause.trim());
+		    			putByType(operandList,count++,clause.trim());
 		    		}else{
 		    			variables.put(clause.trim(),null);
 		    			tokenList.add(clause.trim());
@@ -321,7 +328,7 @@ public class JSQLExpression {
 		    	if(!clause.trim().startsWith("ARG")){
 		    		variables.put(dummyVar(count),null);
 	    			tokenList.add(dummyVar(count));
-	    			putByType(variablesList,count++,clause.trim());
+	    			putByType(operandList,count++,clause.trim());
 	    		}else{
 	    			variables.put(clause.trim(),null);
 	    			tokenList.add(clause.trim());
@@ -483,6 +490,7 @@ public class JSQLExpression {
 		});
 		addOperator(new Operator("=", 7, false) {
 			@Override
+			
 			public BigDecimal eval(Token<?> v1, Token<?> v2) {
 				if(v1.type.equals("String")&&v2.type.equals("String")){
 					return v1.str().equals(v2.str())? BigDecimal.ONE : BigDecimal.ZERO;
@@ -794,10 +802,10 @@ public class JSQLExpression {
 	 *
 	 * @return The result of the expression.
 	 */
-	public void tokenize(String expression,List<JSQLToken<Integer,Object>> variablesList,int count) {
+	public void tokenize(String expression,List<JSQLToken<Integer,Object>> operandList,int count) {
 		clear();
 		Tokenizer tokenizer = new Tokenizer(expression);
-		tokens = tokenizer.tokenizeSimplifiedExpression(variablesList,count);
+		tokens = tokenizer.tokenizeSimplifiedExpression(operandList,count);
 		getRPN();
 	}
 	
@@ -814,6 +822,23 @@ public class JSQLExpression {
 			}
 		}
 		getRPN();
+	}
+	
+	public int checkArity(String token){
+		
+		Pattern pattern = Pattern.compile(ARITY1, Pattern.CASE_INSENSITIVE);
+	    Matcher matcher = pattern.matcher(token);
+	    
+	    if (matcher.find()) {
+	    	return 1;
+	    }
+	    pattern = Pattern.compile(ARITY2, Pattern.CASE_INSENSITIVE);
+	    matcher = pattern.matcher(token);
+	    
+	    if (matcher.find()) {
+	    	return 2;
+	    }
+	    return 0;
 	}
 	
 	public BigDecimal eval(Map<Integer,Object> valuesMap){
@@ -839,7 +864,22 @@ public class JSQLExpression {
 				if (operators.containsKey(token)) {
 					Token<?> arg2 = stack.pop();
 					Token<?> arg1 = stack.pop();
-					stack.push(new Token<BigDecimal>(operators.get(token).eval(arg1, arg2)));
+					//System.out.println(arg1.value+" "+arg2.value);
+					if(arg1.value==null||arg2.value==null){
+						if(token.equalsIgnoreCase("AND")||token.equalsIgnoreCase("OR")){
+							if(arg1.value==null){
+								arg1 = new Token<BigDecimal>(BigDecimal.ZERO);
+							}
+							if(arg2.value==null){
+								arg2 = new Token<BigDecimal>(BigDecimal.ZERO);
+							}
+							stack.push(new Token<BigDecimal>(operators.get(token).eval(arg1, arg2)));
+						}else{
+							stack.push(new Token<String>(null));
+						}
+					}else{
+						stack.push(new Token<BigDecimal>(operators.get(token).eval(arg1, arg2)));
+					}
 				} else if (numeric_variables.containsKey(token)) {
 					stack.push(new Token<BigDecimal>(numeric_variables.get(token).round(mc)));
 				} else if (string_variables.containsKey(token)) {
@@ -848,17 +888,31 @@ public class JSQLExpression {
 					Function f = functions.get(token.toUpperCase());
 					ArrayList<Token<?>> p = new ArrayList<Token<?>>(
 							f.getNumParams());
+					boolean nullFound=false;
 					for (int i = 0; i < f.numParams; i++) {
-						p.add(0,stack.pop());
+						Token<?> t = stack.pop();
+						if(t.value==null){
+							nullFound=true;
+						}
+						p.add(0,t);
 					}
-					Token<BigDecimal> fResult = new Token<BigDecimal>(f.eval(p));
-					stack.push(fResult);
+					if(nullFound){
+						stack.push(new Token<String>(null));
+					}else{
+						Token<BigDecimal> fResult = new Token<BigDecimal>(f.eval(p));
+						stack.push(fResult);
+					}
 				} else {
 					stack.push(new Token<BigDecimal>(new BigDecimal(token, mc)));
 				}
 			}
 			out("--------------------");
-			return ((BigDecimal)stack.pop().getValue()).stripTrailingZeros();
+			Token<?> t = stack.pop();
+			if(t.getValue()==null||t.getValue() instanceof String){
+				return BigDecimal.ZERO;
+			}else{
+				return ((BigDecimal)t.getValue()).stripTrailingZeros();
+			}
 		}catch(Exception e){
 			System.out.println(e);
 			return BigDecimal.ZERO;
@@ -920,16 +974,19 @@ public class JSQLExpression {
 		}else if(val instanceof Boolean){
 			out(val+" is a boolean");
 			set(dummyVar(i),(Boolean)val);
+		}else{
+			out(val+" is null");
+			set(dummyVar(i),(String)null);
 		}
 	}
 	
-	private void putByType(List<JSQLToken<Integer,Object>> variablesList,int count,String variable){
+	private void putByType(List<JSQLToken<Integer,Object>> operandList,int count,String variable){
 		if(isNumber(variable)){
-			variablesList.add(new JSQLToken<Integer,Object>(NUMERIC,count,new BigDecimal(variable)));
+			operandList.add(new JSQLToken<Integer,Object>(NUMERIC,count,new BigDecimal(variable)));
 		}else if(variable.equalsIgnoreCase("true")||variable.equalsIgnoreCase("false")){
-			variablesList.add(new JSQLToken<Integer,Object>(NUMERIC,count,new Boolean(variable)));
+			operandList.add(new JSQLToken<Integer,Object>(NUMERIC,count,new Boolean(variable)));
 		}else{
-			variablesList.add(new JSQLToken<Integer,Object>(PATH,count,variable));
+			operandList.add(new JSQLToken<Integer,Object>(PATH,count,variable));
 		}
 		System.out.println(count);
 	}

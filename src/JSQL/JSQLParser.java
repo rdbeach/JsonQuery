@@ -48,7 +48,7 @@ public class JSQLParser {
 		{"limit",3}
 	};
 	
-	private static final String[] UNITARYKEYS = {};
+	private static final String[] UNARYKEYS = {};
 	
 	private static final String SELECT = "select";
 	private static final String UPDATE = "update";
@@ -431,7 +431,7 @@ public class JSQLParser {
 			    	
 			    	if(beginClause!=0){
 			    		clause = str.substring(beginClause,matcher.start()).trim();
-			    		if(!clause.equals(EMPTY)||contains(UNITARYKEYS,lastKey)){
+			    		if(!clause.equals(EMPTY)||contains(UNARYKEYS,lastKey)){
 			    			tokenMap.put(lastKey, clause);
 			    		}else{
 			    	    	err("You have an error in your JSQL syntax near "+lastKey);
@@ -449,7 +449,7 @@ public class JSQLParser {
 	    }else{
 	    	clause=EMPTY;
 	    }
-	    if(!clause.equals(EMPTY)||contains(UNITARYKEYS,lastKey)){
+	    if(!clause.equals(EMPTY)||contains(UNARYKEYS,lastKey)){
 			tokenMap.put(lastKey, clause);
 	    }else{
 	    	err("You have an error in your JSQL syntax near "+lastKey);
@@ -613,7 +613,7 @@ public class JSQLParser {
 			//return null;
 		}
 		
-		 List<JSQLToken<Integer,Object>> variablesList = new ArrayList<JSQLToken<Integer,Object>>();
+		 List<JSQLToken<Integer,Object>> argumentsList = new ArrayList<JSQLToken<Integer,Object>>();
 		
 		// reassemble simplified expression
 		
@@ -629,7 +629,7 @@ public class JSQLParser {
 					
 			    }
 			}else{ // Paths and String variables
-				variablesList.add(new JSQLToken<Integer,Object>(tokenList.get(i).type,count,(Object)tokenList.get(i).value));
+				argumentsList.add(new JSQLToken<Integer,Object>(tokenList.get(i).type,count,(Object)tokenList.get(i).value));
 				count++;
 			}
 		}
@@ -638,9 +638,9 @@ public class JSQLParser {
 		
 		// Pass it to the evaluator to prepare for evaluation
 		
-		evaluator.tokenize(simplified_expression.toString(),variablesList,count);
+		evaluator.tokenize(simplified_expression.toString(),argumentsList,count);
 		
-		return variablesList;
+		return argumentsList;
 
 	}
 	

@@ -6,8 +6,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Stack;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import src.JsonQueryNode;
 import src.JsonQueryObject;
@@ -72,26 +76,251 @@ public class JSQLEngine {
 		public boolean check=true;
 	}
 	
+	private class Pair<K,T> {
+	    private K x;
+	    private T y;
+	    public Pair(K x, T y){
+	        this.x = x;
+	        this.y = y;
+	    }
+	    public K getX(){ return x; }
+	    public T getY(){ return y; }
+	    public void setX(K x){ this.x = x; }
+	    public void setY(T y){ this.y = y; }
+	}
+	
 	private class Optimizer{
-		public void optimizeWhereClause(
-				List<JSQLToken<Integer,Object>> variableList,
+		
+		private Stack<List<String>> rpnStack =  new Stack<List<String>>();
+		private Stack<String> opcodes = new Stack<String>();
+		private String opcode;
+		
+		List<JSQLToken<Integer,Object>> operandList;
+		Map<Integer,ArrayList<JSQLSelector>> selectorsMap;
+		//ArrayList<ArrayList<JSQLNode>> filteredResultSet;
+		Map<ArrayList<ArrayList<JSQLNode>>,Integer> carryOver;
+		public ArrayList<ArrayList<JSQLNode>> complementResultSet;
+		
+		public static final String NOOP = "NOOP";
+		private static final String AND = "AND";
+		private static final String OR = "OR";
+	
+		private boolean done = false;
+		public boolean firstRun = true;
+		
+		public void initialize(
+				List<JSQLToken<Integer,Object>> operandList,
 				Map<Integer,ArrayList<JSQLSelector>> selectorsMap){
+			this.operandList=operandList;
+			this.selectorsMap=selectorsMap;
+			this.carryOver = new HashMap<ArrayList<ArrayList<JSQLNode>>,Integer>();
+			rpnStack.push(evaluator.rpn);
+			firstRun=true;
+		}
+
+		public void optimizeExpression(){
 			
-			out2("Optimizer:");
+			out2("Optimizing");
 			
-			for (String token : evaluator.getRPN()) {
+			out2("Initial RPN:");
+			for (String token : rpnStack.peek()) {
 				out2(" | " + token);
 				out2("");
 			}
-			evaluator.rpn.remove(0);
-			evaluator.rpn.remove(0);
-			evaluator.rpn.remove(0);
-			evaluator.rpn.remove(3);
-			variableList.remove(1);
-			variableList.remove(1);
-			selectorsMap.remove(1);
-			resultManager.initializeFromSetCounts();
-			filterResult(variableList,selectorsMap);
+			
+			
+			opcodes.push(NOOP);
+			while(!done){
+				int pos = findNextLogicalOperator();
+				if(pos==-1){
+					evaluator.rpn = rpnStack.pop();
+					opcode = opcodes.pop();
+					if(opcode==AND){
+						doAndOptimization();
+					}else if(opcode==OR){
+						doOrOptimization();
+					}else{
+						doNoOptimization();
+					}
+				}else{
+					out2("RPN for: "+opcode);
+					getFirstOperand(pos);
+				}
+				if(rpnStack.empty()){
+					done=true;
+				}
+			}
+			//Push final result
+			if(!resultManager.filteredResultSet.isEmpty()){
+				resultManager.initializeVectorGenerator(null,resultManager.filteredResultSet);
+				ArrayList<ArrayList<JSQLNode>> resultSet = resultManager.filteredResultSet;
+				resultManager.filteredResultSet = new ArrayList<ArrayList<JSQLNode>>();	
+				for(ArrayList<JSQLNode> inputVector: resultSet){
+					if(inputVector.contains(null)){
+						ArrayList<JSQLNode> resultVector;
+						while ((resultVector = resultManager.generateVector(inputVector))!=null) {
+							resultManager.filteredResultSet.add(resultVector);
+						}
+					}else{
+						resultManager.filteredResultSet.add(inputVector);
+					}
+				}
+			}
+		}
+		
+		public int findNextLogicalOperator(){
+			List<String> rpn = rpnStack.peek();
+			for (int pos=rpn.size()-1 ; pos>=0 ; pos--) {
+	            if (rpn.get(pos).equalsIgnoreCase(AND)){
+	            	opcodes.push(AND);
+	            	return pos;
+				}
+	            if (rpn.get(pos).equalsIgnoreCase(OR)){
+	            	opcodes.push(OR);
+	            	return pos;
+				}
+	        }
+			return -1;
+		}
+		
+		private void getFirstOperand(int pos){
+			
+			List<String> rpn = rpnStack.peek();
+			List<String> next_rpn = new ArrayList<String>();
+			rpnStack.push(next_rpn);
+			
+			ListIterator<String> it = rpn.listIterator(pos+1);
+			int opCount=0;
+			boolean targetArgumentFound = false;
+			while(it.hasPrevious()){
+				String token =it.previous();
+				if(opCount==0||targetArgumentFound){
+					it.remove();
+				}
+				if(targetArgumentFound){
+					next_rpn.add(0,token);
+					
+				}
+				opCount+=-evaluator.checkArity(token)+1;
+				if(opCount==0){
+					targetArgumentFound=true;
+				}
+				if(opCount==1){
+					break;
+				}
+			}
+			
+			for (String token : next_rpn) {
+				out2(" | " + token);
+				out2("");
+			}
+		}
+		
+		private void doAndOptimization(){
+			out2("do and optimization");
+			
+			executeOperation();
+		}
+		
+		public void doOrOptimization(){
+			out2("do or optimization");
+			
+			executeOperation();
+		}
+		
+		private void doNoOptimization(){
+			out2("No Op");
+			
+			executeOperation();
+		}
+		
+		
+		private void executeOperation(){
+			List<JSQLToken<Integer,Object>> subOperandList = new ArrayList<JSQLToken<Integer,Object>>();
+			Map<Integer,ArrayList<JSQLSelector>> subSelectorsMap = new HashMap<Integer,ArrayList<JSQLSelector>>();
+			List<String> targets = new ArrayList<String>();
+			complementResultSet = new ArrayList<ArrayList<JSQLNode>>();
+			for (String token : evaluator.rpn) {
+				if(token.startsWith("ARG")){
+					int index = Integer.parseInt(token.substring(3));
+					int listCount=0;
+					for(JSQLToken<Integer,Object> operand:operandList){
+						if(operand.index==index){
+							break;
+						}
+						listCount++;
+					}
+					subOperandList.add(operandList.remove(listCount));
+					if(selectorsMap.containsKey(index)){
+						 for (JSQLSelector selector: selectorsMap.get(index)) {
+							 String target = (selector.target.equals(EMPTY)?FROM:selector.target);
+							 if(!targets.contains(target)){
+								targets.add(target);
+							 }
+						 }
+						subSelectorsMap.put(index, selectorsMap.remove(index));
+					}
+				}
+			}
+			for(JSQLToken<Integer,Object> operand:subOperandList){
+				out2(opcode+": subOperandList: var: " + operand.value + " type: " + operand.type + " index: " + operand.index);
+			}
+			out2("RPN for: "+opcode);
+			for (String token : evaluator.rpn) {
+				out2(" | " + token);
+				out2("");
+			}
+			
+			filterResultStage1(subOperandList,subSelectorsMap,targets);
+			
+			// If a complementary result set exists, store it.
+			if(!complementResultSet.isEmpty()){
+				if(opcode.equals(AND)){
+					out2("set carry over for index: "+opcodes.indexOf(OR));
+					carryOver.put(complementResultSet,opcodes.indexOf(OR));
+				}else if(opcode.equals(OR)){
+					int index = opcodes.indexOf(AND);
+					if(index==-1){
+						index=0;
+					}
+					out2("set carry over for index: "+index);
+					carryOver.put(complementResultSet,index);
+				}
+			}
+			
+			out2(carryOver.size());
+			// Add back carry over
+			if(carryOver.containsValue(opcodes.size())){
+				Iterator<Entry<ArrayList<ArrayList<JSQLNode>>, Integer>> it = carryOver.entrySet().iterator();
+				while(it.hasNext()){
+					Entry<ArrayList<ArrayList<JSQLNode>>, Integer> entry = it.next();
+					if(entry.getValue()==opcodes.size()){
+						out2("add in carry over");
+						resultManager.filteredResultSet.addAll(entry.getKey());
+						it.remove();
+					}
+				}
+			}
+		}
+		
+		public void storeResult(ArrayList<JSQLNode> resultVector,boolean pass){
+			if(opcode.equals(OR)){
+				if(pass){
+					out2("adding or pass vector");
+					complementResultSet.add(resultVector);
+				}else{
+					out2("adding or failure vector");
+					resultManager.filteredResultSet.add(resultVector);
+				}
+			}else{
+				if(pass){
+					out2("adding not or pass vector");
+					resultManager.filteredResultSet.add(resultVector);
+				}else if(opcodes.contains(OR)){
+					out2("adding not or fail vector");
+					complementResultSet.add(resultVector);
+				}
+			}
 		}
 	}
 
@@ -110,7 +339,7 @@ public class JSQLEngine {
 		if(clauses.containsKey(FROM))fromClause=clauses.get(FROM);
 		ArrayList<JSQLNode> resultVector = new ArrayList<JSQLNode>();
 		resultVector.add(node);
-		ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection(fromClause,resultManager.fromClauseResultSetIdentifiers);
+		ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection(fromClause,resultManager.dataSetIdentifiers);
 		executeSelection(resultVector, FROM, selectors);
 
 		out("UPDATE clause");
@@ -119,7 +348,7 @@ public class JSQLEngine {
 			resultManager.getResultSet(FROM).clear();
 			resultVector = new ArrayList<JSQLNode>();
 			resultVector.add(node);
-			selectors = jsqlParser.parseSelection(clauses.get(UPDATE),resultManager.fromClauseResultSetIdentifiers);
+			selectors = jsqlParser.parseSelection(clauses.get(UPDATE),resultManager.dataSetIdentifiers);
 			executeSelection(resultVector,FROM,selectors);
 		}
 
@@ -170,66 +399,77 @@ public class JSQLEngine {
 		if(evaluator==null)
 			evaluator = new JSQLExpression();
 
-		List<JSQLToken<Integer,Object>> variableList = jsqlParser.parseExpression(whereClause,evaluator);
+		List<JSQLToken<Integer,Object>> operandList = jsqlParser.parseExpression(whereClause,evaluator);
 		Map<Integer,ArrayList<JSQLSelector>> selectorsMap = new HashMap<Integer,ArrayList<JSQLSelector>>();
 
-		if(variableList==null)return;
+		if(operandList==null)return;
 		
-		for(JSQLToken<Integer,Object> variable:variableList){
-			out2("var: " + variable.value + " type: " + variable.type + " index: " + variable.index);
-			if(variable.type==SELECTOR){
-				ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection((String)variable.value,resultManager.fromClauseResultSetIdentifiers);
-				selectorsMap.put(variable.index,selectors);
+		for(JSQLToken<Integer,Object> operand:operandList){
+			if(operand.type==SELECTOR){
+				ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection((String)operand.value,resultManager.dataSetIdentifiers);
+				selectorsMap.put(operand.index,selectors);
 			}
 		}
-		
-		// optimize expression
-		
-		// if fromClauseResultSetIdentifiers == 1 just pass through
-		// expression has form a and b and c
-		// examine each and operand to determine how many of the data sets are being referenced
-		// a - uses dataset 1, b - users data set 2, c - uses data set 1 and 2
-		// chose the operand with the least number of datasets and evaluate, in this case
-		// a
-		
-		optimizer.optimizeWhereClause(variableList,selectorsMap);
+		optimizer.initialize(operandList, selectorsMap);
+		optimizer.optimizeExpression();
 	}
 	
-	private void filterResult(
-			List<JSQLToken<Integer,Object>> variableList,
-			Map<Integer,ArrayList<JSQLSelector>> selectorsMap
-			){
+	private void filterResultStage1(
+			List<JSQLToken<Integer,Object>> operandList,
+			Map<Integer,ArrayList<JSQLSelector>> selectorsMap,
+			List<String> targets){
+		ArrayList<ArrayList<JSQLNode>> filteredResultSet;
+		Map<Integer,Object> valuesMap = new HashMap<Integer,Object>();
 		
-		Map<Integer,Object> valsMap = new HashMap<Integer,Object>();
-		Map<Integer,JSQLResultSet<JSQLNode>> subsetMap = new HashMap<Integer,JSQLResultSet<JSQLNode>>();
-		
-		for(JSQLToken<Integer,Object> variable:variableList){
-			if(variable.type!=SELECTOR){
-				valsMap.put(variable.index,variable.value);
+		for(JSQLToken<Integer,Object> operand:operandList){
+			if(operand.type!=SELECTOR){
+				valuesMap.put(operand.index,operand.value);
 			}
 		}
+
+		resultManager.initializeVectorGenerator(targets,resultManager.filteredResultSet);
+		if(optimizer.firstRun){
+			optimizer.firstRun=false;
+			filterResultStage2(operandList,selectorsMap,valuesMap,resultManager.initVector);
+		}else{
+			filteredResultSet = resultManager.filteredResultSet;
+			resultManager.filteredResultSet = new ArrayList<ArrayList<JSQLNode>>();	
+			for(ArrayList<JSQLNode> inputVector: filteredResultSet){
+				filterResultStage2(operandList,selectorsMap,valuesMap,inputVector);
+			}
+		}
+	}
+	
+	private void filterResultStage2(
+			List<JSQLToken<Integer,Object>> operandList,
+			Map<Integer,ArrayList<JSQLSelector>> selectorsMap,
+			Map<Integer,Object> valuesMap,
+			ArrayList<JSQLNode> inputVector){
+		
+		Map<Integer,JSQLResultSet<JSQLNode>> subsetMap = new HashMap<Integer,JSQLResultSet<JSQLNode>>();
 		
 		ArrayList<JSQLNode> resultVector;
-		while ((resultVector = resultManager.getResultVector())!=null) {
+		if(inputVector!=null&&!inputVector.isEmpty()&&inputVector.get(0)!=null)
+		out2(((JsonQueryObject)inputVector.get(0).getElement()).get("name").str());
+		while ((resultVector = resultManager.generateVector(inputVector))!=null) {
+			out2(((JsonQueryObject)resultVector.get(0).getElement()).get("name").str());
 			boolean pass = false;
 			 for (Entry<Integer, ArrayList<JSQLSelector>> entry : selectorsMap.entrySet()) {
 				resultManager.removeResultSet(SUBSELECT);
 				executeSelection(resultVector, SUBSELECT, entry.getValue());
 				JSQLResultSet<JSQLNode> resultSet = resultManager.getResultSet(SUBSELECT );
-				if(!resultSet.isEmpty()){
-					pass=true;
-					subsetMap.put(entry.getKey(),resultSet);
-				}else{
-					pass=false;
-					break;
+				if(resultSet.isEmpty()){
+					resultSet.add(rootNode.createNewNode(null,null));
 				}
+				subsetMap.put(entry.getKey(),resultSet);
+				pass=true;
 			}
+			 
 			if(pass){
-				pass=iterateOverSubsets(variableList,valsMap,subsetMap,0,pass,null);
+				pass=iterateOverSubsets(operandList,valuesMap,subsetMap,0,pass,null);
 			}
-			if(pass){
-				resultManager.filteredResultSet.add(resultVector);
-			}
+				
+			optimizer.storeResult(resultVector,pass);
 		}
 	}
 
@@ -240,7 +480,7 @@ public class JSQLEngine {
 		if(expressions==null){
 			return new JSQLResultSet<JSQLNode>();
 		}
-		List<List<JSQLToken<Integer,Object>>> variableLists = new ArrayList<List<JSQLToken<Integer,Object>>>();
+		List<List<JSQLToken<Integer,Object>>> operandLists = new ArrayList<List<JSQLToken<Integer,Object>>>();
 		List<Boolean> isExpressionList = new ArrayList<Boolean>();
 		List<List<String>> tokensList = new ArrayList<List<String>>();
 
@@ -249,13 +489,13 @@ public class JSQLEngine {
 			if(evaluator==null)
 				evaluator = new JSQLExpression();
 
-			List<JSQLToken<Integer,Object>> variableList = jsqlParser.parseExpression(expr,evaluator);
+			List<JSQLToken<Integer,Object>> operandList = jsqlParser.parseExpression(expr,evaluator);
 
-			if(variableList==null)new JSQLResultSet<JSQLNode>();
+			if(operandList==null)new JSQLResultSet<JSQLNode>();
 
 			List<String> tokens = evaluator.getContext();
 
-			variableLists.add(variableList);
+			operandLists.add(operandList);
 			tokensList.add(tokens);
 
 			boolean isExpression = false;
@@ -269,49 +509,43 @@ public class JSQLEngine {
 		int row=1; 
 		for (ArrayList<JSQLNode> resultVector:resultManager.filteredResultSet) {
 			out("\nExec SelectClause: iterating row "+ row +" for select clause\n");
-			out(0);
 			JSQLResultSet<JSQLNode> result = resultManager.getResultSet(SELECT);
-			out(0);
 			result.rowMarkers.add(result.size());
-			out(1);
 			int i = 0;
 			for(String expr:expressions){
 				boolean isExpression = isExpressionList.get(i);
 				if(isExpression==false){
 					out("Simple selection");
-					ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection(expr,resultManager.fromClauseResultSetIdentifiers);
+					ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection(expr,resultManager.dataSetIdentifiers);
 					executeSelection(resultVector, SELECT, selectors);
 				}else{
-					List<JSQLToken<Integer,Object>> variableList = variableLists.get(i);
+					List<JSQLToken<Integer,Object>> operandList = operandLists.get(i);
 					evaluator.setContext(tokensList.get(i));
 					
 					boolean pass = false;
 					Map<Integer,JSQLResultSet<JSQLNode>> subsetMap = new HashMap<Integer,JSQLResultSet<JSQLNode>>();
 					Map<Integer,Object> valsList = new HashMap<Integer,Object>();
 					int j=0;
-					for(JSQLToken<Integer,Object> variable:variableList){
-						if(variable.type==SELECTOR){
+					for(JSQLToken<Integer,Object> operand:operandList){
+						if(operand.type==SELECTOR){
 							//JSQLResultSet<JSQLNode> resultSet = new JSQLResultSet<JSQLNode>();
 							resultManager.removeResultSet(SUBSELECT );
-							ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection((String)variable.value,resultManager.fromClauseResultSetIdentifiers);
+							ArrayList<JSQLSelector> selectors = jsqlParser.parseSelection((String)operand.value,resultManager.dataSetIdentifiers);
 							executeSelection(resultVector, SUBSELECT, selectors);
 							JSQLResultSet<JSQLNode> resultSet = resultManager.getResultSet(SUBSELECT );
 							out("Exec Selectlause: Got resultset");
-							if(!resultSet.isEmpty()){
-								pass=true;
-								subsetMap.put(variable.index,resultSet);
-							}else{
-								out("Resultset is empty!!");
-								pass=false;
-								break;
+							if(resultSet.isEmpty()){
+								resultSet.add(rootNode.createNewNode(null,null));
 							}
+							subsetMap.put(operand.index,resultSet);
+							pass=true;
 						}else{
-							valsList.put(variable.index,variable.value);
+							valsList.put(operand.index,operand.value);
 						}
 						j++;
 					}
 					if(pass){
-						iterateOverSubsets(variableList,valsList,subsetMap,0,pass,expr);
+						iterateOverSubsets(operandList,valsList,subsetMap,0,pass,expr);
 					}
 				}
 				i++;
@@ -398,18 +632,18 @@ public class JSQLEngine {
 		}
 	}
 	
-	private boolean iterateOverSubsets(List<JSQLToken<Integer,Object>> variableList,
+	private boolean iterateOverSubsets(List<JSQLToken<Integer,Object>> operandList,
 			Map<Integer,Object> valsMap,
 			Map<Integer,JSQLResultSet<JSQLNode>> subsetMap,
 			int i,
 			boolean pass,
 			String expr){
 		if(!pass)return false;
-		out(variableList.get(i).type==SELECTOR);
+		out(operandList.get(i).type==SELECTOR);
 		out("iterateResultSets: variable iteration "+i);
-		if(variableList.get(i).type==SELECTOR){ // Path
-			int index = variableList.get(i).index;
-			out("variable name: " + variableList.get(i).value);
+		if(operandList.get(i).type==SELECTOR){ // Path
+			int index = operandList.get(i).index;
+			out("variable name: " + operandList.get(i).value);
 			JSQLResultSet<JSQLNode> resultSet=subsetMap.get(index);
 			out("Pulling resultset");
 			if(!resultSet.isEmpty()){
@@ -425,10 +659,9 @@ public class JSQLEngine {
 						pass=false;
 						break;
 					}
-					out("hi");
-					//out2("evaluates to : "+evaluator.eval(valsMap));
-					if(i!=variableList.size()-1){
-						pass=iterateOverSubsets(variableList,valsMap,subsetMap,i+1,pass,expr);
+					//out("evaluates to : "+evaluator.eval(valsMap));
+					if(i!=operandList.size()-1){
+						pass=iterateOverSubsets(operandList,valsMap,subsetMap,i+1,pass,expr);
 					}else{
 						if(expr!=null){
 							JSQLResultSet<JSQLNode> selectResultSet = resultManager.getResultSet(SELECT);
@@ -440,10 +673,11 @@ public class JSQLEngine {
 							selectResultSet.index.add(cntx.index); 
 						}else{
 							if(evaluator.eval(valsMap)!=BigDecimal.ONE){
-								out("eval produced false");
+								out2("eval produced false");
 								pass=false;
 								break;
 							}
+							out2("eval produced true");
 						}
 
 					}
@@ -452,9 +686,8 @@ public class JSQLEngine {
 				pass=false;
 			}
 		}else{
-			out(1111);
-			if(i!=variableList.size()-1){
-				pass=iterateOverSubsets(variableList,valsMap,subsetMap,i+1,pass,expr);
+			if(i!=operandList.size()-1){
+				pass=iterateOverSubsets(operandList,valsMap,subsetMap,i+1,pass,expr);
 			}else{
 				if(expr!=null){
 					JSQLResultSet<JSQLNode> selectResultSet = resultManager.getResultSet(SELECT);
@@ -466,9 +699,10 @@ public class JSQLEngine {
 					selectResultSet.index.add(cntx.index); 
 				}else{
 					if(evaluator.eval(valsMap)!=BigDecimal.ONE){
-						out("eval produced false");
+						out2("eval produced false");
 						pass=false;
 					}
+					out2("eval produced true");
 				}
 			}
 		}
@@ -482,7 +716,7 @@ public class JSQLEngine {
 		for(JSQLSelector selector:selectors){
 			JSQLNode result;
 			if(!selector.target.equals(EMPTY)){
-				int index = resultManager.fromClauseResultSetIdentifiers.indexOf(selector.target);
+				int index = resultManager.dataSetIdentifiers.indexOf(selector.target);
 				if(index!=-1){
 					result = resultVector.get(index);
 				}else{
@@ -502,11 +736,11 @@ public class JSQLEngine {
 		if(identifier.equals(FROM)){
 			if(!selector.identifier.equals(EMPTY))
 				resultset_identifier=selector.identifier;
-			if(!resultManager.fromClauseResultSetIdentifiers.contains(resultset_identifier))
+			if(!resultManager.dataSetIdentifiers.contains(resultset_identifier))
 				if(resultset_identifier.equals(FROM)){
-					resultManager.fromClauseResultSetIdentifiers.add(0,resultset_identifier);
+					resultManager.dataSetIdentifiers.add(0,resultset_identifier);
 				}else{
-					resultManager.fromClauseResultSetIdentifiers.add(resultset_identifier);
+					resultManager.dataSetIdentifiers.add(resultset_identifier);
 				}
 		}
 		JSQLResultSet<JSQLNode> resultSet = resultManager.getResultSet(resultset_identifier);
@@ -521,6 +755,7 @@ public class JSQLEngine {
 			cntx.is_select=false;
 		}
 		if(selector.path[0].equals(ALL_OPERATOR)&&selector.path.length==1){
+			out(cntx.is_select);
 			if(cntx.is_select){
 				resultSet.index.add(cntx.index);
 			}
