@@ -1,7 +1,7 @@
 JsonQuery
 =====
 
-A Java based structured query language for JSON.
+A Java based query engine for JSON.
 
 ## A quick look
 
