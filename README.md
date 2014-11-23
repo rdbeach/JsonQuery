@@ -5,7 +5,7 @@ A Java based query engine for JSON.
 
 ## A quick look
 
-***NOTE*** None of the code in this package is guaranteed to be stable or bug free. The SQL engine, in particular, is still in the experimental stages.
+***NOTE*** The package currently includes a simple SQL engine, however, it is still very much in the experimental stages.
 
 JsonQuery gives you Java tools for consuming, traversing, querying, editing, and producing JSON. It uses the Gson library for serialization and deserialization.
 
